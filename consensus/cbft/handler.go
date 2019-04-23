@@ -121,7 +121,7 @@ func (h *handler) handler(p *p2p.Peer, rw p2p.MsgReadWriter) error {
 		p.Log().Debug("CBFT consensus handshake success","hash", hash.Hex(), "number", head.Number)
 	}
 
-	// todo: 握手成功后还需要处理哪些事了？？？
+	// todo: there is something to be done.
 
 	h.peers.Register(peer)
 	defer h.peers.Unregister(peer.id)

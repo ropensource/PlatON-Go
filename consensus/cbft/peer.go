@@ -79,7 +79,7 @@ func (p *peer) Handshake(bn *big.Int, head common.Hash) error {
 			return p2p.DiscReadTimeout
 		}
 	}
-	// todo: 握手成功后需要干些啥了...
+	// todo: Maybe there is something to be done.
 	return nil
 }
 
@@ -97,8 +97,7 @@ func (p *peer) readStatus(status *cbftStatusData) error {
 	if err := msg.Decode(&status); err != nil {
 		return errResp(ErrDecode,"msg %v: %v", msg, err)
 	}
-	// todo: 能否达成一致开启共识需要进一步确认
-
+	// todo: additional judgment.
 	return nil
 }
 
