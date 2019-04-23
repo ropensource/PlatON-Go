@@ -908,8 +908,6 @@ func (cbft *Cbft) OnNewPrepareBlock(nodeId discover.NodeID, request *prepareBloc
 
 		// if accept the block then forward the message
 		if propagation && cbft.needBroadcast(nodeId, request) {
-			// todo: 二次转发prepareBlock仅转发区块hash与块高
-			// 收到消息的节点需要使用类似sync的机制进行处理
 			go cbft.handler.SendBroadcast(&prepareBlockHash{Hash: request.Block.Hash(), Number: request.Block.NumberU64()})
 		}
 
