@@ -38,7 +38,7 @@ func (r *router) gossip(m *MsgPackage) {
 		log.Error("select nodes fail in the gossip method. gossip fail", "msgType", msgType)
 		return
 	}
-	log.Debug("[Method:gossip] gossip message", "msgHash", msgHash.String(), "msgType", reflect.TypeOf(m.msg), "targetPeer", formatPeers(peers))
+	log.Debug("[Method:gossip] gossip message", "msgHash", msgHash.TerminalString(), "msgType", reflect.TypeOf(m.msg), "targetPeer", formatPeers(peers))
 	for _, peer := range peers {
 		//log.Debug("[Method:gossip] Broadcast ", "type", reflect.TypeOf(m.msg), "peer", peer.id)
 		if err := p2p.Send(peer.rw, msgType, m.msg); err != nil {
