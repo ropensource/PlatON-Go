@@ -57,7 +57,7 @@ func (h *handler) broadcast(m *MsgPackage) {
 
 func (h *handler) sendPeer(m *MsgPackage) {
 	if peer, err := h.peers.Get(m.peerID); err == nil {
-		log.Debug("Send message", "type", reflect.TypeOf(m.msg))
+		log.Debug("Send message", "targetPeer",m.peerID, "type", reflect.TypeOf(m.msg), "msgHash", m.msg.MsgHash().String())
 		if err := p2p.Send(peer.rw, MessageType(m.msg), m.msg); err != nil {
 			log.Error("Send Peer error")
 			h.peers.Unregister(m.peerID)

@@ -161,7 +161,7 @@ func New(config *params.CbftConfig, eventMux *event.TypeMux) *Cbft {
 	cbft.bp = logBP
 	cbft.handler = NewHandler(cbft)
 	cbft.router = NewRouter(cbft.handler)
-	cbft.resetCache, _= lru.New(maxResetCacheSize)
+	cbft.resetCache, _ = lru.New(maxResetCacheSize)
 
 	go cbft.receiveLoop()
 	go cbft.executeBlockLoop()
@@ -195,7 +195,12 @@ func (cbft *Cbft) getHighestLogical() *BlockExt {
 }
 
 func (cbft *Cbft) ReceivePeerMsg(msg *msgInfo) {
-	cbft.peerMsgCh <- msg
+	select {
+	case cbft.peerMsgCh <- msg:
+		cbft.log.Debug("[Method:ReceivePeerMsg] received message from peer", "peer", msg.peerID.String(), "msgHash", msg.msg.MsgHash())
+	case <-cbft.exitCh:
+		cbft.log.Error("[Method:ReceivePeerMsg] cbft exit")
+	}
 }
 
 func (cbft *Cbft) InsertChain(block *types.Block) <-chan error {
@@ -558,7 +563,7 @@ func (cbft *Cbft) OnViewChangeVoteTimeout(view *viewChangeVote) {
 
 func (cbft *Cbft) OnPrepareBlockHash(peerID discover.NodeID, msg *prepareBlockHash) error {
 	cbft.log.Debug("[Method:OnPrepareBlockHash] Received message of prepareBlockHash", "FromPeerId", peerID.String(),
-			"BlockHash", msg.Hash.Hex(), "Number", msg.Number)
+		"BlockHash", msg.Hash.Hex(), "Number", msg.Number)
 	// Prerequisite: Nodes with PrepareBlock data can forward Hash
 	cbft.handler.Send(peerID, &getPrepareBlock{Hash: msg.Hash, Number: msg.Number})
 

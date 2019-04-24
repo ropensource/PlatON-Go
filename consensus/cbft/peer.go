@@ -1,9 +1,11 @@
 package cbft
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/PlatONnetwork/PlatON-Go/common"
+	"github.com/PlatONnetwork/PlatON-Go/log"
 	"github.com/PlatONnetwork/PlatON-Go/p2p"
 	"github.com/deckarep/golang-set"
 	"math/big"
@@ -101,8 +103,6 @@ func (p *peer) readStatus(status *cbftStatusData) error {
 	return nil
 }
 
-
-
 type peerSet struct {
 	peers  map[string]*peer
 	lock   sync.RWMutex
@@ -110,9 +110,12 @@ type peerSet struct {
 }
 
 func newPeerSet() *peerSet {
-	return &peerSet{
+	// Monitor output node list
+	ps := &peerSet{
 		peers: make(map[string]*peer),
 	}
+	go ps.printPeers()
+	return ps
 }
 
 func (ps *peerSet) Register(p *peer) {
@@ -180,5 +183,26 @@ func (ps *peerSet) Peers() []*peer {
 	return list
 }
 
-
+func (ps *peerSet) printPeers() {
+	// Output in 2 seconds
+	outTimer := time.NewTicker(time.Second * 2)
+	for {
+		if ps.closed {
+			break
+		}
+		select {
+		case <-outTimer.C:
+			peers := ps.Peers()
+			var bf bytes.Buffer
+			for idx, peer := range peers {
+				bf.WriteString(peer.id)
+				if idx < len(peers) - 1 {
+					bf.WriteString(",")
+				}
+			}
+			pInfo := bf.String()
+			log.Debug(fmt.Sprintf("The neighbor node owned by the current peer is : {%v}, size: {}", pInfo, len(peers)))
+		}
+	}
+}
 

@@ -1,6 +1,7 @@
 package cbft
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/PlatONnetwork/PlatON-Go/log"
 	"github.com/PlatONnetwork/PlatON-Go/p2p"
@@ -37,14 +38,27 @@ func (r *router) gossip(m *MsgPackage) {
 		log.Error("select nodes fail in the gossip method. gossip fail", "msgType", msgType)
 		return
 	}
+	log.Debug("[Method:gossip] gossip message", "msgHash", msgHash.String(), "msgType", reflect.TypeOf(m.msg), "targetPeer", formatPeers(peers))
 	for _, peer := range peers {
-		log.Debug("[Method:gossip] Broadcast ", "type", reflect.TypeOf(m.msg), "peer", peer.id)
+		//log.Debug("[Method:gossip] Broadcast ", "type", reflect.TypeOf(m.msg), "peer", peer.id)
 		if err := p2p.Send(peer.rw, msgType, m.msg); err != nil {
 			log.Error("Send message failed", "peer", peer.id, "err", err)
 		} else {
 			peer.knownMessageHash.Add(msgHash)
 		}
 	}
+}
+
+// formatPeers is used to print the information about peer
+func formatPeers(peers []*peer) string {
+	var bf bytes.Buffer
+	for idx, peer := range peers {
+		bf.WriteString(peer.id)
+		if idx < len(peers) - 1 {
+			bf.WriteString(",")
+		}
+	}
+	return bf.String()
 }
 
 func (r *router) selectNodesByMsgType(msgType uint64, condition interface{}) ([]*peer, error) {
