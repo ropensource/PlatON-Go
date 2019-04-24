@@ -201,7 +201,7 @@ func (ps *peerSet) printPeers() {
 				}
 			}
 			pInfo := bf.String()
-			log.Debug(fmt.Sprintf("The neighbor node owned by the current peer is : {%v}, size: {}", pInfo, len(peers)))
+			log.Debug(fmt.Sprintf("[Method:printPeers] The neighbor node owned by the current peer is : {%v}, size: {%d}", pInfo, len(peers)))
 		}
 	}
 }
