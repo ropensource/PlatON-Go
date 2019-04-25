@@ -673,9 +673,9 @@ func (cbft *Cbft) OnSeal(sealedBlock *types.Block, sealResultCh chan<- *types.Bl
 			return
 		case sealResultCh <- sealedBlock:
 			//reset pool when seal block
-			start := time.Now()
+			//start := time.Now()
 			cbft.reset(sealedBlock)
-			cbft.bp.InternalBP().ResetTxPool(context.TODO(), current, time.Now().Sub(start), &cbft.RoundState)
+			//cbft.bp.InternalBP().ResetTxPool(context.TODO(), current, time.Now().Sub(start), &cbft.RoundState)
 
 			cbft.broadcastBlock(current)
 		default:
