@@ -79,8 +79,12 @@ func (h *handler) Send(peerID discover.NodeID, msg Message) {
 }
 
 func (h *handler) SendBroadcast(msg Message) {
-	h.sendQueue <- &MsgPackage{
+	msgPkg := &MsgPackage{
 		msg: msg,
+	}
+	select {
+	case h.sendQueue <- msgPkg:
+		h.cbft.log.Trace("Send message to broadcast queue", "msgHash", msg.MsgHash().TerminalString())
 	}
 }
 
