@@ -67,7 +67,9 @@ func (p *peer) Handshake(bn *big.Int, head common.Hash) error {
 	}()
 	go func(){
 		errc <- p.readStatus(&status)
-		p.Log().Debug("[Method:Handshake] Receive the cbftStatusData message","blockHash", status.CurrentBlock, "blockNumber", status.BN.Int64())
+		if status.BN != nil {
+			p.Log().Debug("[Method:Handshake] Receive the cbftStatusData message","blockHash", status.CurrentBlock, "blockNumber", status.BN.Int64())
+		}
 	}()
 	timeout := time.NewTicker(handshakeTimeout)
 	defer timeout.Stop()
