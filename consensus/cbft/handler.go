@@ -122,7 +122,7 @@ func (h *handler) handler(p *p2p.Peer, rw p2p.MsgReadWriter) error {
 		p.Log().Debug("CBFT handshake failed", "err", err)
 		return err
 	} else {
-		p.Log().Debug("CBFT consensus handshake success","hash", hash.Hex(), "number", head.Number)
+		p.Log().Debug("CBFT consensus handshake success","hash", hash.TerminalString(), "number", head.Number)
 	}
 
 	// todo: there is something to be done.
