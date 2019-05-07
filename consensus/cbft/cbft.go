@@ -1756,10 +1756,10 @@ func (cbft *Cbft) needBroadcast(nodeId discover.NodeID, msg Message) bool {
 	peers := cbft.handler.peers.Peers()
 	for _, peer := range peers {
 		if peer.knownMessageHash.Contains(msg.MsgHash()) {
-			cbft.log.Debug("need to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash())
+			cbft.log.Debug("needn't to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash())
 			return false
 		}
 	}
-	cbft.log.Debug("needn't to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash())
+	cbft.log.Debug("need to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash())
 	return true
 }
