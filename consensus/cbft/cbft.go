@@ -404,6 +404,7 @@ func (cbft *Cbft) OnSyncBlock(ext *BlockExt) {
 
 //Sync confirmed prepare prepareVotes, not sync when local node has enough prepare prepareVotes
 func (cbft *Cbft) OnConfirmedPrepareBlock(peerID discover.NodeID, pb *confirmedPrepareBlock) error {
+	cbft.log.Debug("Received confirmed prepareBlock ", "peer", peerID, "confirmedPrepareBlock", pb.String())
 	ext := cbft.blockExtMap.findBlock(pb.Hash, pb.Number)
 	if ext == nil || ext.block == nil {
 		cbft.handler.Send(peerID, &getPrepareBlock{Hash: pb.Hash, Number: pb.Number})
@@ -1738,8 +1739,10 @@ func (cbft *Cbft) needBroadcast(nodeId discover.NodeID, msg Message) bool {
 	peers := cbft.handler.peers.Peers()
 	for _, peer := range peers {
 		if peer.knownMessageHash.Contains(msg.MsgHash()) {
+			cbft.log.Debug("need to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash())
 			return false
 		}
 	}
+	cbft.log.Debug("needn't to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash())
 	return true
 }

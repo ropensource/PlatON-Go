@@ -66,6 +66,7 @@ func (h *handler) sendPeer(m *MsgPackage) {
 }
 
 func (h *handler) SendAllConsensusPeer(msg Message) {
+	log.Debug("SendAllConsensusPeer Invoke", "hash", msg.MsgHash(), "type", reflect.TypeOf(msg))
 	h.sendQueue <- &MsgPackage{
 		msg: msg,
 	}
