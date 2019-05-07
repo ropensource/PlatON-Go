@@ -199,7 +199,7 @@ func (cbft *Cbft) getHighestLogical() *BlockExt {
 func (cbft *Cbft) ReceivePeerMsg(msg *msgInfo) {
 	select {
 	case cbft.peerMsgCh <- msg:
-		cbft.log.Debug("[Method:ReceivePeerMsg] received message from peer", "peer", msg.peerID.TerminalString(), "msgType", reflect.TypeOf(msg.msg), "msgHash", msg.msg.MsgHash().TerminalString())
+		cbft.log.Debug("[Method:ReceivePeerMsg] received message from peer", "peer", msg.peerID.TerminalString(), "msgType", reflect.TypeOf(msg.msg), "msgHash", msg.msg.MsgHash().TerminalString(), "BHash", msg.msg.BHash().TerminalString())
 	case <-cbft.exitCh:
 		cbft.log.Error("[Method:ReceivePeerMsg] cbft exit")
 	}
@@ -1756,10 +1756,10 @@ func (cbft *Cbft) needBroadcast(nodeId discover.NodeID, msg Message) bool {
 	peers := cbft.handler.peers.Peers()
 	for _, peer := range peers {
 		if peer.knownMessageHash.Contains(msg.MsgHash()) {
-			cbft.log.Debug("needn't to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash())
+			cbft.log.Debug("needn't to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash(), "BHash", msg.BHash().TerminalString())
 			return false
 		}
 	}
-	cbft.log.Debug("need to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash())
+	cbft.log.Debug("need to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash(), "BHash", msg.BHash().TerminalString())
 	return true
 }
