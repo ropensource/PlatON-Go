@@ -75,6 +75,8 @@ var (
 
 	peerMsgQueueSize = 1024
 	cbftVersion      = byte(0x01)
+
+	maxBlockDist = uint64(192)
 )
 
 type Cbft struct {
@@ -745,9 +747,14 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 	bpCtx := context.WithValue(context.Background(), "peer", peerID)
 	cbft.bp.ViewChangeBP().ReceiveViewChange(bpCtx, view, &cbft.RoundState)
 	if err := cbft.VerifyAndViewChange(view); err != nil {
-		if view.BaseBlockNum > cbft.getHighestConfirmed().number {
-			cbft.handler.SendAllConsensusPeer(&getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
+		if view.BaseBlockNum > cbft.getHighestConfirmed().number  {
+			if view.BaseBlockNum - cbft.getHighestConfirmed().number > maxBlockDist {
+				atomic.StoreInt32(&cbft.running, 0)
+			} else {
+				cbft.handler.SendAllConsensusPeer(&getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
+			}
 		}
+
 		cbft.bp.ViewChangeBP().InvalidViewChange(bpCtx, view, err, &cbft.RoundState)
 		cbft.log.Error("Verify view failed", "err", err, "peer", peerID, "view", view.String())
 		return err
@@ -1212,29 +1219,33 @@ func (cbft *Cbft) HasTwoThirdsMajorityViewChangeVotes() bool {
 	return cbft.agreeViewChange()
 }
 
-func (cbft *Cbft) CalcBlockDeadline() time.Time {
-	nodeIdx, _ := cbft.dpos.NodeIndex(cbft.config.NodeID)
+func (cbft *Cbft) CalcBlockDeadline() (time.Time, error) {
+	nodeIdx, err := cbft.dpos.NodeIndex(cbft.config.NodeID)
+	if err != nil {
+		return time.Time{}, err
+	}
 	startEpoch := cbft.dpos.StartTimeOfEpoch() * 1000
 	timePoint := time.Now().UnixNano() / int64(time.Millisecond)
 
 	if nodeIdx >= 0 {
 		if len(cbft.dpos.primaryNodeList) == 1 {
-			return time.Now().Add(time.Second)
+			return time.Now().Add(time.Duration(cbft.config.Period) * time.Second), err
 		}
 		durationPerNode := cbft.config.Duration * 1000
 		durationPerTurn := durationPerNode * int64(len(cbft.dpos.primaryNodeList))
 
 		min := int64(nodeIdx) * (durationPerNode)
 		value := (timePoint - startEpoch) % durationPerTurn
-		max := int64(nodeIdx+1) * durationPerNode
+		max := int64(nodeIdx + 1) * durationPerNode
 
-		slots := make([]int64, cbft.config.Duration)
+		cnt := int64(cbft.config.Duration) / int64(cbft.config.Period)
+		slots := make([]int64, cnt)
 		var i int64
-		for i = 0; i < cbft.config.Duration; i++ {
-			slots[i] = min + (i * 1000)
+		for i = 0; i < cnt; i++ {
+			slots[i] = min + (i*1000)*int64(cbft.config.Period)
 		}
 
-		curIdx := (value % durationPerNode) / 1000
+		curIdx := (value % durationPerNode) / (1000 * int64(cbft.config.Period))
 		lastBlock := int(curIdx+1) == len(slots)
 		nextSlotValue := max
 		if !lastBlock {
@@ -1249,34 +1260,39 @@ func (cbft *Cbft) CalcBlockDeadline() time.Time {
 				remaing = 50 * time.Millisecond // 50ms
 			}
 		}
-		return time.Now().Add(remaing)
+		return time.Now().Add(remaing), err
 	}
-	return time.Now().Add(50 * time.Millisecond) // 50ms
+	return time.Now().Add(50 * time.Millisecond), err // 50ms
+
 }
 
-func (cbft *Cbft) CalcNextBlockTime() time.Time {
-	nodeIdx, _ := cbft.dpos.NodeIndex(cbft.config.NodeID)
+func (cbft *Cbft) CalcNextBlockTime() (time.Time, error) {
+	nodeIdx, err := cbft.dpos.NodeIndex(cbft.config.NodeID)
+	if err != nil {
+		return time.Time{}, err
+	}
 	startEpoch := cbft.dpos.StartTimeOfEpoch() * 1000
 	timePoint := time.Now().UnixNano() / int64(time.Millisecond)
 
 	if nodeIdx >= 0 {
 		if len(cbft.dpos.primaryNodeList) == 1 {
-			return time.Now().Add(time.Second)
+			return time.Now().Add(time.Duration(cbft.config.Period) * time.Second), nil
 		}
 		durationPerNode := cbft.config.Duration * 1000
 		durationPerTurn := durationPerNode * int64(len(cbft.dpos.primaryNodeList))
 
 		min := int64(nodeIdx) * (durationPerNode)
 		value := (timePoint - startEpoch) % durationPerTurn
-		max := int64(nodeIdx+1) * durationPerNode
+		max := int64(nodeIdx + 1) * durationPerNode
 
-		slots := make([]int64, cbft.config.Duration)
+		cnt := int64(cbft.config.Duration) / int64(cbft.config.Period)
+		slots := make([]int64, cnt)
 		var i int64
-		for i = 0; i < cbft.config.Duration; i++ {
-			slots[i] = min + (i * 1000)
+		for i = 0; i < cnt; i++ {
+			slots[i] = min + (i*1000)*int64(cbft.config.Period)
 		}
-		curIdx := (value % durationPerNode) / 1000
-		lastBlock := (curIdx + 1) == cbft.config.Duration
+		curIdx := (value % durationPerNode) / (1000 * int64(cbft.config.Period))
+		lastBlock := int(curIdx + 1) == len(slots)
 		nextSlotValue := max
 		if !lastBlock {
 			nextSlotValue = slots[curIdx+1]
@@ -1286,9 +1302,10 @@ func (cbft *Cbft) CalcNextBlockTime() time.Time {
 		if !lastBlock {
 			offset = remaining
 		}
-		return time.Now().Add(time.Duration(offset) * time.Millisecond)
+		return time.Now().Add(time.Duration(offset) * time.Millisecond), nil
 	}
-	return time.Now().Add(time.Second) // 1s
+	return time.Now().Add(time.Duration(cbft.config.Period) * time.Second), nil // 1s
+
 }
 
 // ConsensusNodes returns all consensus nodes.
