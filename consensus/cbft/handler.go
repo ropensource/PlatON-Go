@@ -148,6 +148,16 @@ func (h *handler) handleMsg(p *peer) error {
 	switch {
 	case msg.Code == CBFTStatusMsg:
 		return errResp(ErrExtraStatusMsg, "uncontrolled status message")
+	case msg.Code == GetPrepareBlockMsg :
+		var request getPrepareBlock
+		if err := msg.Decode(&request); err != nil {
+			return errResp(ErrDecode, "%v: %v", msg, err)
+		}
+		h.cbft.ReceivePeerMsg(&msgInfo{
+			msg:    &request,
+			peerID: p.ID(),
+		})
+		return nil
 	case msg.Code == PrepareBlockMsg:
 		// Retrieve and decode the propagated block
 		var request prepareBlock
