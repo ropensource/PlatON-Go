@@ -21,7 +21,6 @@ var (
 	errTimestamp                  = errors.New("viewchange timestamp too low")
 	errInvalidViewChangeVote      = errors.New("invalid viewchange vote")
 
-
 	emptyAddr = common.Address{}
 )
 
@@ -195,6 +194,7 @@ func (cbft *Cbft) addPrepareBlockVote(pbd *prepareBlock) {
 	if cbft.viewChange == nil {
 		return
 	}
+	pbd.Timestamp = cbft.viewChange.Timestamp
 	except := cbft.viewChange.BaseBlockNum + 1
 	log.Info("add prepare block", "number", pbd.Block.NumberU64(), "except", except, "irr", cbft.viewChange.BaseBlockNum)
 	log.Info(fmt.Sprintf("master:%v prepareVotes:%d ", cbft.master, len(cbft.viewChangeVotes)))
@@ -310,7 +310,7 @@ func (cbft *Cbft) AcceptPrepareBlock(request *prepareBlock) AcceptStatus {
 }
 
 func (cbft *Cbft) AcceptPrepareVote(vote *prepareVote) AcceptStatus {
-	if vote.Number < cbft.getHighestConfirmed().number  {
+	if vote.Number < cbft.getHighestConfirmed().number {
 		return Discard
 	}
 	if (cbft.lastViewChange != nil && vote.Number < cbft.lastViewChange.BaseBlockNum) ||
