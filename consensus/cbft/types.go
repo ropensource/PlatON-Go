@@ -378,6 +378,7 @@ func (cbft *Cbft) clear() {
 
 func (cbft *Cbft) handleCache() {
 	votes := cbft.processingVotes
+	cbft.processingVotes.Clear()
 	go cbft.processing(votes)
 	cbft.pendingProcess()
 }

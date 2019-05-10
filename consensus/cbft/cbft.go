@@ -546,9 +546,11 @@ func (cbft *Cbft) OnGetHighestPrepareBlock(peerID discover.NodeID, msg *getHighe
 
 func (cbft *Cbft) OnHighestPrepareBlock(peerID discover.NodeID, msg *highestPrepareBlock) error {
 	cbft.log.Debug("Receive HighestPrepareBlock", "peer", peerID.TerminalString(), "msg", msg.String())
-	for _, block := range msg.CommitedBlock {
-		cbft.log.Debug("Sync Highest Block", "number", block.NumberU64())
-		cbft.InsertChain(block, nil)
+	if len(msg.CommitedBlock)+len(cbft.syncBlockCh) < cap(cbft.syncBlockCh) {
+		for _, block := range msg.CommitedBlock {
+			cbft.log.Debug("Sync Highest Block", "number", block.NumberU64())
+			cbft.InsertChain(block, nil)
+		}
 	}
 
 	for _, prepare := range msg.UnconfirmedBlock {
@@ -609,7 +611,7 @@ func (cbft *Cbft) OnPrepareBlockHash(peerID discover.NodeID, msg *prepareBlockHa
 }
 
 func (cbft *Cbft) NextBaseBlock() *types.Block {
-	ch := make(chan *types.Block)
+	ch := make(chan *types.Block, 1)
 	cbft.baseBlockCh <- ch
 	return <-ch
 }
@@ -724,11 +726,12 @@ func (cbft *Cbft) ShouldSeal(curTime int64) (bool, error) {
 	inturn := cbft.inTurn(curTime)
 	if inturn {
 		cbft.netLatencyLock.RLock()
-		defer cbft.netLatencyLock.RUnlock()
 		peersCount := len(cbft.netLatencyMap)
+		cbft.netLatencyLock.RUnlock()
 		if peersCount < cbft.getThreshold() {
 			inturn = false
 		}
+
 	}
 	//cbft.log.Debug("Should Seal", "time", curTime, "inturn", inturn, "peers", len(cbft.netLatencyMap))
 	if inturn {
@@ -780,7 +783,7 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 			if view.BaseBlockNum-cbft.getHighestConfirmed().number > maxBlockDist {
 				atomic.StoreInt32(&cbft.running, 0)
 			} else {
-				cbft.handler.SendAllConsensusPeer(&getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
+				cbft.handler.Send(peerID, &getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
 			}
 		}
 
@@ -1765,7 +1768,7 @@ func (cbft *Cbft) OnGetBlock(hash common.Hash, number uint64, ch chan *types.Blo
 	}
 }
 func (cbft *Cbft) GetBlock(hash common.Hash, number uint64) *types.Block {
-	ch := make(chan *types.Block)
+	ch := make(chan *types.Block, 1)
 	cbft.getBlockCh <- &GetBlock{hash: hash, number: number, ch: ch}
 	return <-ch
 }
