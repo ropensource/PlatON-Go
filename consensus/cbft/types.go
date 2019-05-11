@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/PlatONnetwork/PlatON-Go/common"
 	"github.com/PlatONnetwork/PlatON-Go/core/types"
+	sort2 "sort"
 	"github.com/PlatONnetwork/PlatON-Go/log"
 	"github.com/PlatONnetwork/PlatON-Go/p2p/discover"
 	"github.com/pkg/errors"
@@ -467,7 +468,7 @@ func (cbft *Cbft) VerifyAndViewChange(view *viewChange) error {
 		return errTimestamp
 	}
 
-	if cbft.blockExtMap.findBlock(view.BaseBlockHash, view.BaseBlockNum) == nil {
+	if cbft.getHighestConfirmed().number != view.BaseBlockNum {
 		cbft.log.Error(fmt.Sprintf("View's block is not found hash:%s, number:%d", view.BaseBlockHash.TerminalString(), view.BaseBlockNum))
 		return errNotFoundViewBlock
 	}
@@ -887,8 +888,15 @@ func (bm *BlockExtMap) fixChain(blockExt *BlockExt) {
 }
 func (bm *BlockExtMap) BlockString() string {
 	var blockStr string
-	for _, v := range bm.blocks {
-		for _, ext := range v {
+
+	var keys []float64
+	for k, _ := range bm.blocks {
+		keys = append(keys, float64(k))
+	}
+	sort2.Float64s(keys)
+
+	for _, k := range keys {
+		for _, ext := range bm.blocks[uint64(k)] {
 			if ext.block != nil {
 				blockStr += fmt.Sprintf("[Hash:%s, Number:%d PrepareVotes:%d, Execute:%v ", ext.block.Hash().TerminalString(), ext.block.NumberU64(), ext.prepareVotes.Len(), ext.isExecuted)
 				for _, v := range ext.children {
