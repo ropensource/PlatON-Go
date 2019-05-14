@@ -387,9 +387,9 @@ func (cbft *Cbft) handleCache() {
 func (cbft *Cbft) processing(votes ProcessingVote) {
 	for _, v := range votes {
 		for k, v := range v {
-			cbft.peerMsgCh <- &msgInfo{
-				msg:    v,
-				peerID: k,
+			cbft.peerMsgCh <- &MsgInfo{
+				Msg:    v,
+				PeerID: k,
 			}
 		}
 	}
@@ -529,11 +529,15 @@ func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote)
 		}
 	}
 	if !hadAgree && cbft.agreeViewChange() {
+		cbft.wal.UpdateViewChange(&ViewChangeMessage{
+			Hash:   vote.BlockHash,
+			Number: vote.BlockNum,
+		})
 		cbft.bp.ViewChangeBP().TwoThirdViewChangeVotes(bpCtx, &cbft.RoundState)
 		cbft.flushReadyBlock()
 		cbft.producerBlocks = NewProducerBlocks(cbft.config.NodeID, cbft.viewChange.BaseBlockNum)
 		cbft.clearPending()
-		cbft.blockExtMap.ClearChildren(cbft.viewChange.BaseBlockHash, cbft.viewChange.BaseBlockNum)
+		cbft.blockExtMap.ClearChildren(cbft.viewChange.BaseBlockHash, cbft.viewChange.BaseBlockNum, cbft.viewChange.Timestamp)
 
 	}
 	log.Info("Receive viewchange vote", "msg", vote.String(), "had votes", len(cbft.viewChangeVotes))
@@ -700,6 +704,10 @@ func (b *BlockExt) Merge(ext *BlockExt) {
 			//receive PrepareVote before receive PrepareBlock, so view is need set
 			b.block = ext.block
 			b.view = ext.view
+		}
+		if b.proposalAddr == emptyAddr {
+			b.proposalAddr = ext.proposalAddr
+			b.proposalIndex = ext.proposalIndex
 		}
 		b.prepareVotes.Merge(ext.prepareVotes)
 
@@ -1035,15 +1043,18 @@ func (bm *BlockExtMap) ClearParents(hash common.Hash, number uint64) {
 	//}
 }
 
-func (bm *BlockExtMap) ClearChildren(hash common.Hash, number uint64) {
+func (bm *BlockExtMap) ClearChildren(hash common.Hash, number uint64, timestamp uint64) {
 	for i := number + 1; bm.blocks[i] != nil; i++ {
 		log.Debug("clear block", "number", i)
 		for hash, ext := range bm.blocks[i] {
 			if ext.parent != nil {
 				delete(ext.parent.children, hash)
 			}
+			if ext.timestamp != timestamp {
+				ext.SetSyncState(nil)
+				delete(bm.blocks[i], hash)
+			}
 		}
-		delete(bm.blocks, i)
 	}
 }
 
@@ -1144,6 +1155,17 @@ func (bm *BlockExtMap) findBlockByNumber(low, high uint64) types.Blocks {
 		}
 	}
 	return blocks
+}
+
+func (bm *BlockExtMap) findBlockByHash(hash common.Hash) *types.Block {
+	for _, extMap := range bm.blocks {
+		for existHash, ext := range extMap {
+			if existHash == hash {
+				return ext.block
+			}
+		}
+	}
+	return nil
 }
 
 func (bm *BlockExtMap) findBlockExtByNumber(low, high uint64) []*BlockExt {
