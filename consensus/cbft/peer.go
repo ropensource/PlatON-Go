@@ -53,7 +53,7 @@ type peer struct {
 	knownPreVote        mapset.Set
 	knownConfPreBlock   mapset.Set
 	knownPreBlockHash   mapset.Set
-	knownViewChange     mapset.Set
+	//knownViewChange     mapset.Set
 	knownViewChangeVote mapset.Set
 
 	// pending message queue
@@ -61,7 +61,7 @@ type peer struct {
 	queuedPreVotes        chan *prepareVote
 	queuedConfPreBlocks   chan *confirmedPrepareBlock
 	queuedPreBlockHashes  chan *prepareBlockHash
-	queuedViewChanges     chan *viewChange
+	//queuedViewChanges     chan *viewChange
 	queuedViewChangeVotes chan *viewChangeVote
 }
 
@@ -76,14 +76,14 @@ func newPeer(p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
 		knownPreVote:        mapset.NewSet(),
 		knownConfPreBlock:   mapset.NewSet(),
 		knownPreBlockHash:   mapset.NewSet(),
-		knownViewChange:     mapset.NewSet(),
+		//knownViewChange:     mapset.NewSet(),
 		knownViewChangeVote: mapset.NewSet(),
 
 		queuedPreBlocks:       make(chan *prepareBlock, maxQueuedPreBlocks),
 		queuedPreVotes:        make(chan *prepareVote, maxQueuedPreVotes),
 		queuedConfPreBlocks:   make(chan *confirmedPrepareBlock, maxQueuedConfPreBlocks),
 		queuedPreBlockHashes:  make(chan *prepareBlockHash, maxQueuedPreBlockHashes),
-		queuedViewChanges:     make(chan *viewChange, maxQueuedViewChanges),
+		//queuedViewChanges:     make(chan *viewChange, maxQueuedViewChanges),
 		queuedViewChangeVotes: make(chan *viewChangeVote, maxQueuedViewChangeVotes),
 	}
 }
@@ -127,12 +127,12 @@ func (p *peer) MarkPrepareBlockHash(msgHash common.Hash) {
 	p.knownPreBlockHash.Add(msgHash)
 }
 
-func (p *peer) MarkViewChange(msgHash common.Hash) {
+/*func (p *peer) MarkViewChange(msgHash common.Hash) {
 	for p.knownViewChange.Cardinality() >= maxKnownViewChanges {
 		p.knownViewChange.Pop()
 	}
 	p.knownViewChange.Add(msgHash)
-}
+}*/
 
 func (p *peer) MarkViewChangeVote(msgHash common.Hash) {
 	for p.knownViewChangeVote.Cardinality() >= maxKnownViewChangeVotes {
@@ -224,12 +224,12 @@ func (p *peer) broadcast() {
 			}
 			p.Log().Trace("Broadcast prepare block hash", "number", preBlockHash.Number, "hash", preBlockHash.Hash, "msgHash", preBlockHash.MsgHash().TerminalString())
 
-		case viewChange := <-p.queuedViewChanges:
+		/*case viewChange := <-p.queuedViewChanges:
 			if err := p.SendViewChange(viewChange); err != nil {
 				return
 			}
 			p.Log().Trace("Broadcast view change", "number", viewChange.BaseBlockNum, "hash", viewChange.BaseBlockHash, "msgHash", viewChange.MsgHash().TerminalString())
-
+		*/
 		case viewChangeVote := <-p.queuedViewChangeVotes:
 			if err := p.SendViewChangeVote(viewChangeVote); err != nil {
 				return
@@ -298,19 +298,19 @@ func (p *peer) AsyncSendPrepareBlockHash(preBlockHash *prepareBlockHash) {
 	}
 }
 
-func (p *peer) SendViewChange(viewChange *viewChange) error {
+/*func (p *peer) SendViewChange(viewChange *viewChange) error {
 	p.knownViewChange.Add(viewChange.MsgHash())
 	return p2p.Send(p.rw, ViewChangeMsg, viewChange)
-}
+}*/
 
-func (p *peer) AsyncSendViewChnage(viewChange *viewChange) {
+/*func (p *peer) AsyncSendViewChnage(viewChange *viewChange) {
 	select {
 	case p.queuedViewChanges <- viewChange:
 		p.knownViewChange.Add(viewChange.MsgHash())
 	default:
 		p.Log().Debug("Dropping view change msg propagation", "number", viewChange.BaseBlockNum, "hash", viewChange.BaseBlockHash, "msgHash", viewChange.MsgHash().TerminalString())
 	}
-}
+}*/
 
 func (p *peer) SendViewChangeVote(viewChangeVote *viewChangeVote) error {
 	p.knownViewChangeVote.Add(viewChangeVote.MsgHash())
@@ -459,7 +459,7 @@ func (ps *peerSet) PeersWithoutConfirmedPrepareBlock(hash common.Hash) []*peer {
 	return list
 }
 
-func (ps *peerSet) PeersWithoutViewChange(hash common.Hash) []*peer {
+/*func (ps *peerSet) PeersWithoutViewChange(hash common.Hash) []*peer {
 	ps.lock.RLock()
 	defer ps.lock.RUnlock()
 
@@ -470,7 +470,7 @@ func (ps *peerSet) PeersWithoutViewChange(hash common.Hash) []*peer {
 		}
 	}
 	return list
-}
+}*/
 
 func (ps *peerSet) PeersWithoutViewChangeVote(hash common.Hash) []*peer {
 	ps.lock.RLock()

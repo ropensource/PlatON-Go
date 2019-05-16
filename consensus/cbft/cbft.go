@@ -133,7 +133,7 @@ type Cbft struct {
 	preVoteFeed			event.Feed
 	confPreBlockFeed 	event.Feed
 	preBlockHashFeed 	event.Feed
-	viewChangeFeed 		event.Feed 
+	//viewChangeFeed 		event.Feed
 	viewChangeVoteFeed 	event.Feed
 	scope        		event.SubscriptionScope
 
@@ -907,9 +907,6 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 	cbft.bp.ViewChangeBP().SendViewChangeVote(bpCtx, resp, &cbft.RoundState)
 	cbft.handler.SendAllConsensusPeer(view)
 	cbft.handler.SendAllConsensusPeer(resp)
-
-	// to broadcast
-	go cbft.viewChangeFeed.Send(NewViewChangeEvent{view})
 
 	//cbft.handler.Send(peerID, cbft.viewChangeResp)
 	return nil
@@ -1987,9 +1984,9 @@ func (cbft *Cbft) SubscribeNewPrepareBlockHashEvent(ch chan<- NewPrepareBlockHas
 	return cbft.scope.Track(cbft.preBlockHashFeed.Subscribe(ch))
 }
 
-func (cbft *Cbft) SubscribeNewViewChangeEvent(ch chan<- NewViewChangeEvent) event.Subscription {
+/*func (cbft *Cbft) SubscribeNewViewChangeEvent(ch chan<- NewViewChangeEvent) event.Subscription {
 	return cbft.scope.Track(cbft.viewChangeFeed.Subscribe(ch))
-}
+}*/
 
 func (cbft *Cbft) SubscribeNewViewChangeVoteEvent(ch chan<- NewViewChangeVoteEvent) event.Subscription {
 	return cbft.scope.Track(cbft.viewChangeVoteFeed.Subscribe(ch))

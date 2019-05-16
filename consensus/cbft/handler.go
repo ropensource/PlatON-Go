@@ -200,7 +200,7 @@ func (h *handler) handleMsg(p *peer) error {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
 		//p.MarkMessageHash((&request).MsgHash())
-		p.MarkViewChange((&request).MsgHash())
+		//p.MarkViewChange((&request).MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    &request,
 			PeerID: p.ID(),

@@ -16,9 +16,9 @@ type NewPrepareBlockHashEvent struct {
 	PrepareBlockHash *prepareBlockHash
 }
 
-type NewViewChangeEvent struct {
+/*type NewViewChangeEvent struct {
 	ViewChange *viewChange
-}
+}*/
 
 type NewViewChangeVoteEvent struct {
 	ViewChangeVote *viewChangeVote

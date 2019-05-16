@@ -36,8 +36,8 @@ type router struct {
 	preVoteCh         		chan NewPrepareVoteEvent
 	preVoteSub        		event.Subscription
 
-	viewChangeCh        	chan NewViewChangeEvent
-	viewChangeSub       	event.Subscription
+	//viewChangeCh        	chan NewViewChangeEvent
+	//viewChangeSub       	event.Subscription
 
 	viewChangeVoteCh       	chan NewViewChangeVoteEvent
 	viewChangeVoteSub       event.Subscription
@@ -63,8 +63,8 @@ func NewRouter(hd *handler) *router {
 	r.confPreBlockSub = r.msgHandler.cbft.SubscribeNewConfirmedPrepareBlockEvent(r.confPreBlockCh)
 	r.preBlockHashCh = make(chan NewPrepareBlockHashEvent, 2048)
 	r.preBlockHashSub = r.msgHandler.cbft.SubscribeNewPrepareBlockHashEvent(r.preBlockHashCh)
-	r.viewChangeCh = make(chan NewViewChangeEvent,1024)
-	r.viewChangeSub = r.msgHandler.cbft.SubscribeNewViewChangeEvent(r.viewChangeCh)
+	//r.viewChangeCh = make(chan NewViewChangeEvent,1024)
+	//r.viewChangeSub = r.msgHandler.cbft.SubscribeNewViewChangeEvent(r.viewChangeCh)
 	r.viewChangeVoteCh = make(chan NewViewChangeVoteEvent, 2048)
 	r.viewChangeVoteSub = r.msgHandler.cbft.SubscribeNewViewChangeVoteEvent(r.viewChangeVoteCh)
 
@@ -72,7 +72,7 @@ func NewRouter(hd *handler) *router {
 	go r.prepareVoteBroadcastLoop()
 	go r.confirmedPrepareBlockBroadcastLoop()
 	go r.prepareBlockHashBroadcastLoop()
-	go r.viewChangeBroadcastLoop()
+	//go r.viewChangeBroadcastLoop()
 	go r.viewChangeVoteBroadcastLoop()
 
 	return r
@@ -168,7 +168,7 @@ func (r *router) BroadcastPrepareBlockHash(msg *prepareBlockHash, filter peerFil
 	log.Trace("Propagated prepare block hash", "hash", msg.Hash, "number", msg.Number, "msgHash", msg.MsgHash())
 }
 
-func (r *router) viewChangeBroadcastLoop() {
+/*func (r *router) viewChangeBroadcastLoop() {
 	for {
 		select {
 		case event := <-r.viewChangeCh:
@@ -178,9 +178,9 @@ func (r *router) viewChangeBroadcastLoop() {
 			return
 		}
 	}
-}
+}*/
 
-func (r *router) BroadcastViewChange(msg *viewChange, filter peerFilter) {
+/*func (r *router) BroadcastViewChange(msg *viewChange, filter peerFilter) {
 	msgHash := msg.MsgHash()
 	peersSet := r.msgHandler.peers.PeersWithoutViewChange(msgHash)
 	peers := filter(peersSet)
@@ -188,7 +188,7 @@ func (r *router) BroadcastViewChange(msg *viewChange, filter peerFilter) {
 		peer.AsyncSendViewChnage(msg)
 	}
 	log.Trace("Propagated view change", "hash", msg.BaseBlockHash, "number", msg.BaseBlockNum, "msgHash", msg.MsgHash())
-}
+}*/
 
 func (r *router) viewChangeVoteBroadcastLoop() {
 	for {
@@ -204,7 +204,7 @@ func (r *router) viewChangeVoteBroadcastLoop() {
 
 func (r *router) BroadcastViewChangeVote(msg *viewChangeVote, filter peerFilter) {
 	msgHash := msg.MsgHash()
-	peersSet := r.msgHandler.peers.PeersWithoutViewChange(msgHash)
+	peersSet := r.msgHandler.peers.PeersWithoutViewChangeVote(msgHash)
 	peers := filter(peersSet)
 	for _, peer := range peers {
 		peer.AsyncSendViewChnageVote(msg)
@@ -231,14 +231,14 @@ func (r *router) gossip(m *MsgPackage) {
 		r.BroadcastPreBlock(m.msg.(*prepareBlock), filter)
 	case PrepareVoteMsg:
 		r.BroadcastPrepareVote(m.msg.(*prepareVote), filter)
-	case ViewChangeMsg:
-		r.BroadcastViewChange(m.msg.(*viewChange), filter)
 	case ViewChangeVoteMsg:
 		r.BroadcastViewChangeVote(m.msg.(*viewChangeVote), filter)
 	case ConfirmedPrepareBlockMsg:
 		r.BroadcastConfirmedPrepareBlock(m.msg.(*confirmedPrepareBlock), filter)
 	case PrepareBlockHashMsg:
 		r.BroadcastPrepareBlockHash(m.msg.(*prepareBlockHash), filter)
+	case ViewChangeMsg:
+		fallthrough
 	case GetPrepareVoteMsg:
 		fallthrough
 	case PrepareVotesMsg:
