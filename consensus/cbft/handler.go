@@ -46,8 +46,9 @@ func (h *handler) sendLoop() {
 		case m := <-h.sendQueue:
 			if len(m.peerID) == 0 {
 				h.broadcast(m)
+			} else {
+				h.sendPeer(m)
 			}
-			h.sendPeer(m)
 		}
 	}
 }
@@ -81,7 +82,7 @@ func (h *handler) Send(peerID discover.NodeID, msg Message) {
 	}
 }
 
-func (h *handler) SendBroadcast(msg Message) {
+/*func (h *handler) SendBroadcast(msg Message) {
 	msgPkg := &MsgPackage{
 		msg: msg,
 	}
@@ -89,15 +90,15 @@ func (h *handler) SendBroadcast(msg Message) {
 	case h.sendQueue <- msgPkg:
 		h.cbft.log.Debug("Send message to broadcast queue", "msgHash", msg.MsgHash().TerminalString(), "BHash", msg.BHash().TerminalString())
 	}
-}
+}*/
 
-func (h *handler) sendViewChangeVote(id *discover.NodeID, msg *viewChangeVote) error {
+/*func (h *handler) sendViewChangeVote(id *discover.NodeID, msg *viewChangeVote) error {
 	if peer, err := h.peers.Get(fmt.Sprintf("%x", id.Bytes()[:8])); err != nil {
 		return err
 	} else {
 		return p2p.Send(peer.rw, ViewChangeVoteMsg, msg)
 	}
-}
+}*/
 
 func (h *handler) Protocols() []p2p.Protocol {
 	return []p2p.Protocol{
@@ -167,7 +168,8 @@ func (h *handler) handleMsg(p *peer) error {
 		if err := msg.Decode(&request); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
-		p.MarkMessageHash((&request).MsgHash())
+		//p.MarkMessageHash((&request).MsgHash())
+		p.MarkPrepareBlock((&request).MsgHash())
 		log.Info("Received a PrepareBlockMsg", "peer", p.id, "prepare", request.String())
 
 		request.Block.ReceivedAt = msg.ReceivedAt
@@ -184,8 +186,8 @@ func (h *handler) handleMsg(p *peer) error {
 		if err := msg.Decode(&request); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
-		p.MarkMessageHash((&request).MsgHash())
-
+		//p.MarkMessageHash((&request).MsgHash())
+		p.MarkPrepareVote((&request).MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    &request,
 			PeerID: p.ID(),
@@ -198,7 +200,7 @@ func (h *handler) handleMsg(p *peer) error {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
 		//p.MarkMessageHash((&request).MsgHash())
-
+		p.MarkViewChange((&request).MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    &request,
 			PeerID: p.ID(),
@@ -223,8 +225,8 @@ func (h *handler) handleMsg(p *peer) error {
 		if err := msg.Decode(&request); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
-		p.MarkMessageHash((&request).MsgHash())
-
+		//p.MarkMessageHash((&request).MsgHash())
+		p.MarkConfirmedPrepareBlock((&request).MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    &request,
 			PeerID: p.ID(),
@@ -279,8 +281,8 @@ func (h *handler) handleMsg(p *peer) error {
 		if err := msg.Decode(&request); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
-		p.MarkMessageHash((&request).MsgHash())
-
+		//p.MarkMessageHash((&request).MsgHash())
+		p.MarkPrepareBlockHash((&request).MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    &request,
 			PeerID: p.ID(),

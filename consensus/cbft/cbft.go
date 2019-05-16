@@ -128,7 +128,14 @@ type Cbft struct {
 	resetCache *lru.Cache
 	bp         Breakpoint
 	// router
-	router *router
+	router 				*router
+	preBlockFeed       	event.Feed
+	preVoteFeed			event.Feed
+	confPreBlockFeed 	event.Feed
+	preBlockHashFeed 	event.Feed
+	viewChangeFeed 		event.Feed 
+	viewChangeVoteFeed 	event.Feed
+	scope        		event.SubscriptionScope
 
 	// wal
 	nodeServiceContext *node.ServiceContext
@@ -500,9 +507,11 @@ func (cbft *Cbft) OnConfirmedPrepareBlock(peerID discover.NodeID, pb *confirmedP
 
 	cbft.syncMissingBlock(peerID, pb.Number)
 
-	if cbft.needBroadcast(peerID, pb) {
+	/*if cbft.needBroadcast(peerID, pb) {
 		go cbft.handler.SendBroadcast(pb)
-	}
+	}*/
+	// to broadcast
+	go cbft.confPreBlockFeed.Send(NewConfirmedPrepareBlockEvent{pb})
 
 	return nil
 }
@@ -668,10 +677,10 @@ func (cbft *Cbft) OnPrepareBlockHash(peerID discover.NodeID, msg *prepareBlockHa
 	// Prerequisite: Nodes with PrepareBlock data can forward Hash
 	cbft.handler.Send(peerID, &getPrepareBlock{Hash: msg.Hash, Number: msg.Number})
 
-	// then: to forward msg
-	if ok := cbft.needBroadcast(peerID, msg); ok {
+	// forward hash if the block exists locally
+	/*if ok := cbft.needBroadcast(peerID, msg); ok {
 		go cbft.handler.SendBroadcast(msg)
-	}
+	}*/
 
 	return nil
 }
@@ -899,6 +908,9 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 	cbft.handler.SendAllConsensusPeer(view)
 	cbft.handler.SendAllConsensusPeer(resp)
 
+	// to broadcast
+	go cbft.viewChangeFeed.Send(NewViewChangeEvent{view})
+
 	//cbft.handler.Send(peerID, cbft.viewChangeResp)
 	return nil
 
@@ -1048,9 +1060,7 @@ func (cbft *Cbft) OnNewPrepareBlock(nodeId discover.NodeID, request *prepareBloc
 		}
 
 		// if accept the block then forward the message
-		if propagation && cbft.needBroadcast(nodeId, request) {
-			go cbft.handler.SendBroadcast(&prepareBlockHash{Hash: request.Block.Hash(), Number: request.Block.NumberU64()})
-		}
+		go cbft.preBlockFeed.Send(NewPrepareBlockEvent{request})
 
 		return cbft.OnNewBlock(ext)
 	case Cache:
@@ -1594,6 +1604,10 @@ func (cbft *Cbft) OnPrepareVote(peerID discover.NodeID, vote *prepareVote, propa
 		cbft.log.Debug("Accept block vote", "vote", vote.String())
 		cbft.bp.PrepareBP().AcceptVote(bpCtx, vote, &cbft.RoundState)
 		cbft.prepareVoteReceiver(peerID, vote)
+
+		// to broadcast
+		go cbft.preVoteFeed.Send(NewPrepareVoteEvent{vote})
+
 	case Cache:
 		cbft.log.Debug("View changing, add vote into process queue", "vote", vote.String())
 		cbft.bp.PrepareBP().CacheVote(bpCtx, vote, &cbft.RoundState)
@@ -1605,11 +1619,6 @@ func (cbft *Cbft) OnPrepareVote(peerID discover.NodeID, vote *prepareVote, propa
 	}
 	cbft.log.Trace("Processing vote end", "hash", vote.Hash, "number", vote.Number)
 
-	// rule:
-	if propagation && cbft.needBroadcast(peerID, vote) {
-		cbft.log.Debug("[Method:OnPrepareVote] broadcast the message of prepareVote", "FromPeerId", peerID.String())
-		go cbft.handler.SendBroadcast(vote)
-	}
 
 	return nil
 }
@@ -1957,20 +1966,31 @@ func (cbft *Cbft) OnFastSyncCommitHead(errCh chan error) {
 	errCh <- nil
 }
 
-func (cbft *Cbft) needBroadcast(nodeId discover.NodeID, msg Message) bool {
-	//isCsusNode := cbft.IsConsensusNode() fmt.Sprintf("%x", p.ID().Bytes()[:8]),
-	peers := cbft.handler.peers.Peers()
-	for _, peer := range peers {
-		if peer.knownMessageHash.Contains(msg.MsgHash()) {
-			cbft.log.Debug("needn't to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash(), "BHash", msg.BHash().TerminalString())
-			return false
-		}
-	}
-	cbft.log.Debug("need to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash(), "BHash", msg.BHash().TerminalString())
-	return true
-}
-
 func (cbft *Cbft) AddJournal(msg *MsgInfo) {
 	cbft.log.Debug("[Method:LoadPeerMsg] received message from peer", "peer", msg.PeerID.TerminalString(), "msgType", reflect.TypeOf(msg.Msg), "msgHash", msg.Msg.MsgHash().TerminalString(), "BHash", msg.Msg.BHash().TerminalString())
 	cbft.handleMsg(msg)
+}
+
+func (cbft *Cbft) SubscribeNewPrepareBlockEvent(ch chan<- NewPrepareBlockEvent) event.Subscription {
+	return cbft.scope.Track(cbft.preBlockFeed.Subscribe(ch))
+}
+
+func (cbft *Cbft) SubscribeNewPrepareVoteEvent(ch chan<- NewPrepareVoteEvent) event.Subscription {
+	return cbft.scope.Track(cbft.preVoteFeed.Subscribe(ch))
+}
+
+func (cbft *Cbft) SubscribeNewConfirmedPrepareBlockEvent(ch chan<- NewConfirmedPrepareBlockEvent) event.Subscription {
+	return cbft.scope.Track(cbft.confPreBlockFeed.Subscribe(ch))
+}
+
+func (cbft *Cbft) SubscribeNewPrepareBlockHashEvent(ch chan<- NewPrepareBlockHashEvent) event.Subscription {
+	return cbft.scope.Track(cbft.preBlockHashFeed.Subscribe(ch))
+}
+
+func (cbft *Cbft) SubscribeNewViewChangeEvent(ch chan<- NewViewChangeEvent) event.Subscription {
+	return cbft.scope.Track(cbft.viewChangeFeed.Subscribe(ch))
+}
+
+func (cbft *Cbft) SubscribeNewViewChangeVoteEvent(ch chan<- NewViewChangeVoteEvent) event.Subscription {
+	return cbft.scope.Track(cbft.viewChangeVoteFeed.Subscribe(ch))
 }
