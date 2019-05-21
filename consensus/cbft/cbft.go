@@ -79,7 +79,7 @@ var (
 
 	maxBlockDist = uint64(192)
 
-	msgQueuesLimit = 2048
+	maxQueuesLimit = 4096
 )
 
 type Cbft struct {
@@ -131,6 +131,7 @@ type Cbft struct {
 	bp         Breakpoint
 	// router
 	router *router
+	queues map[string]int
 
 	// wal
 	nodeServiceContext *node.ServiceContext
@@ -178,6 +179,7 @@ func New(config *params.CbftConfig, eventMux *event.TypeMux, ctx *node.ServiceCo
 	cbft.bp = defaultBP
 	cbft.handler = NewHandler(cbft)
 	cbft.router = NewRouter(cbft.handler)
+	cbft.queues = make(map[string]int)
 	cbft.resetCache, _ = lru.New(maxResetCacheSize)
 
 	return cbft
@@ -207,9 +209,15 @@ func (cbft *Cbft) getHighestLogical() *BlockExt {
 }
 
 func (cbft *Cbft) ReceivePeerMsg(msg *MsgInfo) {
+	count := cbft.queues[msg.PeerID.TerminalString()] + 1
+	if count > maxQueuesLimit {
+		cbft.log.Debug("Discarded msg, exceeded allowance", "peer", msg.PeerID.TerminalString(), "msgType", reflect.TypeOf(msg.Msg), "msgHash", msg.Msg.MsgHash(), "limit", maxQueuesLimit)
+		return;
+	}
 	select {
 	case cbft.peerMsgCh <- msg:
 		cbft.log.Debug("[Method:ReceivePeerMsg] received message from peer", "peer", msg.PeerID.TerminalString(), "msgType", reflect.TypeOf(msg.Msg), "msgHash", msg.Msg.MsgHash().TerminalString(), "BHash", msg.Msg.BHash().TerminalString())
+		cbft.queues[msg.PeerID.TerminalString()] = count
 	case <-cbft.exitCh:
 		cbft.log.Error("[Method:ReceivePeerMsg] cbft exit")
 	}
@@ -319,6 +327,10 @@ func (cbft *Cbft) receiveLoop() {
 		select {
 		case msg := <-cbft.peerMsgCh:
 			cbft.handleMsg(msg)
+			cbft.queues[msg.PeerID.TerminalString()]--
+			if cbft.queues[msg.PeerID.TerminalString()] == 0 {
+				delete(cbft.queues, msg.PeerID.TerminalString())
+			}
 		case bt := <-cbft.syncBlockCh:
 			cbft.OnSyncBlock(bt)
 		case bs := <-cbft.executeBlockCh:
@@ -1995,9 +2007,12 @@ func (cbft *Cbft) OnFastSyncCommitHead(errCh chan error) {
 }
 
 func (cbft *Cbft) needBroadcast(nodeId discover.NodeID, msg Message) bool {
-	//isCsusNode := cbft.IsConsensusNode() fmt.Sprintf("%x", p.ID().Bytes()[:8]),
 	peers := cbft.handler.peers.Peers()
 	for _, peer := range peers {
+		// exclude currently send peer.
+		if peer.id == nodeId.TerminalString() {
+			continue
+		}
 		if peer.knownMessageHash.Contains(msg.MsgHash()) {
 			cbft.log.Debug("needn't to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash(), "BHash", msg.BHash().TerminalString())
 			messageRepeatMeter.Mark(1)
