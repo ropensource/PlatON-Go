@@ -814,8 +814,10 @@ func (cbft *Cbft) ShouldSeal(curTime int64) (bool, error) {
 	}
 	//cbft.log.Debug("Should Seal", "time", curTime, "inturn", inturn, "peers", len(cbft.netLatencyMap))
 	if inturn {
-		lastViewChangeTime := time.Unix(int64(cbft.lastViewChange.Timestamp), 0)
-		viewChangeTimer.UpdateSince(lastViewChangeTime)
+		if cbft.lastViewChange != nil {
+			lastViewChangeTime := time.Unix(int64(cbft.lastViewChange.Timestamp), 0)
+			viewChangeTimer.UpdateSince(lastViewChangeTime)
+		}
 		// if first block of mine, send viewchange message, return false
 		// if viewchange success , return true
 		// if viewchange failed , wait timeout until re-send message
