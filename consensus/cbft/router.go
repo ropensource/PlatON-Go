@@ -15,8 +15,8 @@ const (
 )
 
 type router struct {
-	msgHandler *handler 							// Used to send or receive logical processing of messages.
-	filter func(*peer, uint64, interface{}) bool	// Used for filtering node
+	msgHandler *handler                              // Used to send or receive logical processing of messages.
+	filter     func(*peer, uint64, interface{}) bool // Used for filtering node
 	routerLock sync.RWMutex
 }
 
@@ -46,7 +46,8 @@ func (r *router) gossip(m *MsgPackage) {
 		transfer := peers[:int(math.Sqrt(float64(len(peers))))]
 		peers = transfer
 	}
-	log.Debug("[Method:gossip] gossip message", "msgHash", msgHash.TerminalString(), "msgType", reflect.TypeOf(m.msg), "targetPeer", formatPeers(peers))
+	log.Debug("Gossip message", "msgHash", msgHash.TerminalString(), "msgType", reflect.TypeOf(m.msg), "targetPeer", formatPeers(peers))
+
 	for _, peer := range peers {
 		if err := p2p.Send(peer.rw, msgType, m.msg); err != nil {
 			log.Error("Send message failed", "peer", peer.id, "err", err)
@@ -61,7 +62,7 @@ func formatPeers(peers []*peer) string {
 	var bf bytes.Buffer
 	for idx, peer := range peers {
 		bf.WriteString(peer.id)
-		if idx < len(peers) - 1 {
+		if idx < len(peers)-1 {
 			bf.WriteString(",")
 		}
 	}
@@ -73,7 +74,7 @@ func (r *router) selectNodesByMsgType(msgType uint64, condition interface{}) ([]
 	defer r.routerLock.RUnlock()
 	switch msgType {
 	case PrepareBlockMsg, PrepareVoteMsg, ConfirmedPrepareBlockMsg,
-		 PrepareBlockHashMsg:
+		PrepareBlockHashMsg:
 		return r.kMixingRandomNodes(msgType, condition)
 	case ViewChangeMsg, GetPrepareBlockMsg, GetHighestPrepareBlockMsg, ViewChangeVoteMsg:
 		return r.kConsensusRandomNodes(msgType, condition)
@@ -112,7 +113,7 @@ func (r *router) kMixingRandomNodes(msgType uint64, condition interface{}) ([]*p
 	existsPeers := r.msgHandler.peers.Peers()
 	consensusPeers := make([]*peer, 0)
 	nonconsensusPeers := make([]*peer, 0)
-	for _, peer := range existsPeers {	//
+	for _, peer := range existsPeers { //
 		isConsensus := false
 		for _, node := range cNodes {
 			if peer.id == fmt.Sprintf("%x", node.Bytes()[:8]) {
@@ -127,7 +128,7 @@ func (r *router) kMixingRandomNodes(msgType uint64, condition interface{}) ([]*p
 		}
 	}
 	// todo: need to test
-	kNonconsensusNodes := kRandomNodes(len(nonconsensusPeers) / 2, nonconsensusPeers, msgType, condition, r.filter)
+	kNonconsensusNodes := kRandomNodes(len(nonconsensusPeers)/2, nonconsensusPeers, msgType, condition, r.filter)
 	consensusPeers = append(consensusPeers, kNonconsensusNodes...)
 	return consensusPeers, nil
 }
@@ -148,7 +149,7 @@ OUTER:
 	// Probe up to 3*n times, with large n this is not necessary
 	// since k << n, but with small n we want search to be
 	// exhaustive.
-	for i := 0; i < 3 * n && len(kNodes) < k; i++ {
+	for i := 0; i < 3*n && len(kNodes) < k; i++ {
 		// Get random node
 		idx := randomOffset(n)
 		node := peers[idx]

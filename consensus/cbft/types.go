@@ -36,9 +36,6 @@ const (
 	Cache
 )
 
-type blockSynced struct {
-}
-
 type PendingVote map[common.Hash]*prepareVote
 type PendingBlock map[common.Hash]*prepareBlock
 type ProcessingVote map[common.Hash]map[discover.NodeID]*prepareVote
@@ -73,7 +70,7 @@ func (vv ViewChangeVotes) String() string {
 		s += fmt.Sprintf("[addr:%s, vote:%s]", k.String(), v.String())
 	}
 	s += "]"
-	return ""
+	return s
 }
 
 func (rs RoundState) String() string {
@@ -162,8 +159,7 @@ func (cbft *Cbft) SetLocalHighestPrepareNum(num uint64) {
 	if cbft.localHighestPrepareVoteNum < num {
 		cbft.localHighestPrepareVoteNum = num
 	}
-	cbft.log.Debug("SetLocalHighestPrepareNum", "l", cbft.localHighestPrepareVoteNum, "n", num)
-
+	cbft.log.Debug("SetLocalHighestPrepareNum", "local", cbft.localHighestPrepareVoteNum, "number", num)
 }
 
 func (cbft *Cbft) checkViewChangeVotes(votes []*viewChangeVote) error {
@@ -188,7 +184,6 @@ func (cbft *Cbft) checkViewChangeVotes(votes []*viewChangeVote) error {
 }
 
 func (cbft *Cbft) verifyValidatorSign(validatorIndex uint32, validatorAddr common.Address, hash common.Hash, signature []byte) error {
-	return nil
 	if index, err := cbft.dpos.AddressIndex(validatorAddr); err == nil && uint32(index) == validatorIndex {
 		//todo verify sign
 		if err := verifySign(cbft.dpos.NodeID(index), hash, signature); err != nil {
@@ -356,8 +351,6 @@ func (cbft *Cbft) AcceptPrepareVote(vote *prepareVote) AcceptStatus {
 }
 
 func (cbft *Cbft) ClearPending() {
-	//cbft.mux.Lock()
-	//defer cbft.mux.Unlock()
 	cbft.clearPending()
 }
 
@@ -368,8 +361,6 @@ func (cbft *Cbft) clearPending() {
 }
 
 func (cbft *Cbft) ClearViewChange() {
-	//cbft.mux.Lock()
-	//defer cbft.mux.Unlock()
 	cbft.clearViewChange()
 }
 
@@ -381,8 +372,6 @@ func (cbft *Cbft) clearViewChange() {
 }
 
 func (cbft *Cbft) Clear() {
-	//cbft.mux.Lock()
-	//defer cbft.mux.Unlock()
 	cbft.clear()
 }
 
@@ -674,6 +663,13 @@ func (pv *prepareVoteSet) Merge(vs *prepareVoteSet) {
 	}
 }
 
+func (pv *prepareVoteSet) IsMaj23() bool {
+	if pv == nil {
+		return false
+	}
+	return uint32(len(pv.votes)) >= pv.voteBits.Size()
+}
+
 func (pv *prepareVoteSet) Signs() []common.BlockConfirmSign {
 	signs := make([]common.BlockConfirmSign, 0)
 
@@ -898,12 +894,18 @@ func (bm *BlockExtMap) Add(hash common.Hash, number uint64, blockExt *BlockExt) 
 		if ext, ok := extMap[hash]; ok {
 			log.Debug(fmt.Sprintf("hash:%s, number:%d", hash.TerminalString(), number))
 			ext.Merge(blockExt)
+			if ext.prepareVotes.IsMaj23() {
+				bm.removeFork(number, hash)
+			}
 			if ext.block != nil {
 				bm.fixChain(ext)
 			}
 		} else {
 			log.Debug(fmt.Sprintf("hash:%s, number:%d", hash.TerminalString(), number))
 			extMap[hash] = blockExt
+			if ext.prepareVotes.IsMaj23() {
+				bm.removeFork(number, hash)
+			}
 			if blockExt.block != nil {
 				bm.fixChain(blockExt)
 			}
@@ -914,8 +916,31 @@ func (bm *BlockExtMap) Add(hash common.Hash, number uint64, blockExt *BlockExt) 
 		extMap := make(map[common.Hash]*BlockExt)
 		extMap[hash] = blockExt
 		bm.blocks[number] = extMap
+		if blockExt.prepareVotes.IsMaj23() {
+			bm.removeFork(number, hash)
+		}
 		if blockExt.block != nil {
 			bm.fixChain(blockExt)
+		}
+	}
+}
+
+func (bm *BlockExtMap) removeFork(number uint64, hash common.Hash) {
+	if extMap, ok := bm.blocks[number]; ok {
+		for k, v := range extMap {
+			if k != hash {
+				if v.prepareVotes.IsMaj23() {
+					panic(fmt.Sprintf("forked block has 2f+1 prepare votes:%s", k.TerminalString()))
+				}
+				if v.parent != nil {
+					delete(v.parent.children, k)
+				}
+				if v.children != nil {
+					for _, p := range v.children {
+						p.parent = nil
+					}
+				}
+			}
 		}
 	}
 }
