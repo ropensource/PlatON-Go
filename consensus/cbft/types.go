@@ -20,6 +20,7 @@ var (
 	errBlockHashNotEqual          = errors.New("block hash not equal")
 	errViewChangeBlockNumTooLower = errors.New("block number too lower")
 	errInvalidProposalAddr        = errors.New("invalid proposal address")
+	errRecvViewTimeout            = errors.New("receive viewchang timeout")
 	errTimestamp                  = errors.New("viewchange timestamp too low")
 	errInvalidViewChangeVote      = errors.New("invalid viewchange vote")
 	errInvalidConfirmNumTooLow    = errors.New("confirm block number lower than local prepare")
@@ -473,6 +474,12 @@ func (cbft *Cbft) newViewChange() (*viewChange, error) {
 
 func (cbft *Cbft) VerifyAndViewChange(view *viewChange) error {
 
+	now := time.Now().UnixNano() / 1e6
+	if !cbft.isLegal(now, view.ProposalAddr) || !cbft.isLegal(int64(view.Timestamp), view.ProposalAddr) {
+		cbft.log.Error("Receive view change timeout", "current", now, "remote", view.Timestamp)
+		return errRecvViewTimeout
+	}
+
 	if cbft.viewChange != nil && cbft.viewChange.Timestamp > view.Timestamp {
 		cbft.log.Error("Verify view change failed", "local timestamp", cbft.viewChange.Timestamp, "remote", view.Timestamp)
 		return errTimestamp
@@ -903,7 +910,7 @@ func (bm *BlockExtMap) Add(hash common.Hash, number uint64, blockExt *BlockExt) 
 		} else {
 			log.Debug(fmt.Sprintf("hash:%s, number:%d", hash.TerminalString(), number))
 			extMap[hash] = blockExt
-			if ext.prepareVotes.IsMaj23() {
+			if blockExt.prepareVotes.IsMaj23() {
 				bm.removeFork(number, hash)
 			}
 			if blockExt.block != nil {
