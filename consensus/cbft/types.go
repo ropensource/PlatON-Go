@@ -568,6 +568,7 @@ func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote)
 	}
 
 	if !hadAgree && cbft.agreeViewChange() {
+		viewChangeVoteFulfillTimer.UpdateSince(time.Unix(int64(cbft.viewChange.Timestamp), 0))
 		cbft.wal.UpdateViewChange(&ViewChangeMessage{
 			Hash:   vote.BlockHash,
 			Number: vote.BlockNum,
@@ -961,6 +962,7 @@ func (bm *BlockExtMap) fixChain(blockExt *BlockExt) {
 	if blockExt.prepareVotes.Len() >= bm.threshold {
 		log.Debug("Block is confirmed", "hash", blockExt.block.Hash(), "number", blockExt.number)
 		blockExt.isConfirmed = true
+		blockMinedTimer.UpdateSince(common.MillisToTime(blockExt.rcvTime))
 	}
 
 	parent := bm.findParent(blockExt.block.ParentHash(), blockExt.number)

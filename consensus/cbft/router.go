@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/PlatONnetwork/PlatON-Go/log"
 	"github.com/PlatONnetwork/PlatON-Go/p2p"
+	"math"
 	"reflect"
 	"sync"
 )
@@ -38,9 +39,16 @@ func (r *router) gossip(m *MsgPackage) {
 		log.Error("select nodes fail in the gossip method. gossip fail", "msgType", msgType)
 		return
 	}
+	switch m.mode {
+	case MixMode:
+	case FullMode:
+	case PartMode:
+		transfer := peers[:int(math.Sqrt(float64(len(peers))))]
+		peers = transfer
+	}
 	log.Debug("Gossip message", "msgHash", msgHash.TerminalString(), "msgType", reflect.TypeOf(m.msg), "targetPeer", formatPeers(peers))
+
 	for _, peer := range peers {
-		//log.Debug("[Method:gossip] Broadcast ", "type", reflect.TypeOf(m.msg), "peer", peer.id)
 		if err := p2p.Send(peer.rw, msgType, m.msg); err != nil {
 			log.Error("Send message failed", "peer", peer.id, "err", err)
 		} else {
