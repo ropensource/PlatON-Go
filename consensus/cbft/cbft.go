@@ -132,6 +132,7 @@ type Cbft struct {
 	// router
 	router *router
 	queues map[string]int
+	queueMu sync.RWMutex
 
 	// wal
 	nodeServiceContext *node.ServiceContext
@@ -209,6 +210,8 @@ func (cbft *Cbft) getHighestLogical() *BlockExt {
 }
 
 func (cbft *Cbft) ReceivePeerMsg(msg *MsgInfo) {
+	cbft.queueMu.Lock()
+	defer cbft.queueMu.Unlock()
 	count := cbft.queues[msg.PeerID.TerminalString()] + 1
 	if count > maxQueuesLimit {
 		cbft.log.Debug("Discarded msg, exceeded allowance", "peer", msg.PeerID.TerminalString(), "msgType", reflect.TypeOf(msg.Msg), "msgHash", msg.Msg.MsgHash(), "limit", maxQueuesLimit)
@@ -328,10 +331,12 @@ func (cbft *Cbft) receiveLoop() {
 		select {
 		case msg := <-cbft.peerMsgCh:
 			cbft.handleMsg(msg)
+			cbft.queueMu.Lock()
 			cbft.queues[msg.PeerID.TerminalString()]--
 			if cbft.queues[msg.PeerID.TerminalString()] == 0 {
 				delete(cbft.queues, msg.PeerID.TerminalString())
 			}
+			cbft.queueMu.Unlock()
 		case bt := <-cbft.syncBlockCh:
 			cbft.OnSyncBlock(bt)
 		case bs := <-cbft.executeBlockCh:
