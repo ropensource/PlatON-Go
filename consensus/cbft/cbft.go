@@ -451,7 +451,7 @@ END:
 		cbft.OnSendViewChange()
 
 		oldCount := viewChangeGauage.Value()
-		viewChangeGauage.Update(oldCount+1)
+		viewChangeGauage.Update(oldCount + 1)
 		viewChangeCounter.Inc(1)
 
 		shouldSeal <- errTwoThirdViewchangeVotes
@@ -795,6 +795,7 @@ func (cbft *Cbft) OnSeal(sealedBlock *types.Block, sealResultCh chan<- *types.Bl
 	cbft.highestLogical.Store(current)
 	cbft.AddPrepareBlock(sealedBlock)
 
+	cbft.broadcastBlock(current)
 	//todo change sign and block state
 	go func() {
 		select {
@@ -806,7 +807,6 @@ func (cbft *Cbft) OnSeal(sealedBlock *types.Block, sealResultCh chan<- *types.Bl
 			cbft.reset(sealedBlock)
 			//cbft.bp.InternalBP().ResetTxPool(context.TODO(), current, time.Now().Sub(start), &cbft.RoundState)
 
-			cbft.broadcastBlock(current)
 		default:
 			cbft.log.Warn("Sealing result is not ready by miner", "sealHash", sealedBlock.Header().SealHash())
 		}
@@ -1791,13 +1791,13 @@ func (cbft *Cbft) inTurnVerify(rcvTime int64, nodeID discover.NodeID) bool {
 }
 
 //isLegal verifies the time is legal to package new block for the nodeID.
-func (cbft *Cbft) isLegal(rcvTime int64, producerID discover.NodeID) bool {
-	offset := 1000 * (cbft.config.Duration/2 - 1)
-	isLegal := cbft.calTurn(rcvTime-offset, producerID)
-	if !isLegal {
-		isLegal = cbft.calTurn(rcvTime+offset, producerID)
+func (cbft *Cbft) isLegal(rcvTime int64, addr common.Address) bool {
+	nodeIdx, err := cbft.dpos.AddressIndex(addr)
+	if err != nil {
+		cbft.log.Error("Get address index failed", "err", err)
+		return false
 	}
-	return isLegal
+	return cbft.calTurnIndex(rcvTime, nodeIdx)
 }
 
 func (cbft *Cbft) calTurn(timePoint int64, nodeID discover.NodeID) bool {
@@ -1805,6 +1805,11 @@ func (cbft *Cbft) calTurn(timePoint int64, nodeID discover.NodeID) bool {
 	if err != nil {
 		return false
 	}
+	return cbft.calTurnIndex(timePoint, nodeIdx)
+}
+
+func (cbft *Cbft) calTurnIndex(timePoint int64, nodeIdx int) bool {
+
 	startEpoch := cbft.dpos.StartTimeOfEpoch() * 1000
 
 	if nodeIdx >= 0 {
@@ -1820,7 +1825,7 @@ func (cbft *Cbft) calTurn(timePoint int64, nodeID discover.NodeID) bool {
 
 		max := int64(nodeIdx+1) * durationPerNode
 
-		if value > min && value < max {
+		if value >= min && value < max {
 			//cbft.log.Debug("calTurn return true", "idx", nodeIdx, "min", min, "value", value, "max", max, "timePoint", common.MillisToString(timePoint), "startEpoch", common.MillisToString(startEpoch))
 			return true
 		} else {
