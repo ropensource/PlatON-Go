@@ -970,7 +970,7 @@ func (cbft *Cbft) flushReadyBlock() bool {
 	cbft.rootIrreversible.Store(newRoot)
 	cbft.bp.InternalBP().NewHighestRootBlock(context.TODO(), newRoot, &cbft.RoundState)
 
-	blockConfirmedTimer.UpdateSince(time.Unix(int64(newRoot.timestamp), 0))
+	blockConfirmedTimer.UpdateSince(common.MillisToTime(newRoot.rcvTime))
 
 	return true
 
@@ -1052,6 +1052,7 @@ func (cbft *Cbft) OnNewPrepareBlock(nodeId discover.NodeID, request *prepareBloc
 
 		//receive 2f+1 view vote , clear last view state
 		if cbft.agreeViewChange() {
+			viewChangeConfirmedTimer.UpdateSince(time.Unix(int64(cbft.viewChange.Timestamp),0))
 			cbft.bp.ViewChangeBP().TwoThirdViewChangeVotes(bpCtx, &cbft.RoundState)
 			var newHeader *types.Header
 			viewBlock := cbft.blockExtMap.findBlock(cbft.viewChange.BaseBlockHash, cbft.viewChange.BaseBlockNum)
