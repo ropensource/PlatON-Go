@@ -182,7 +182,6 @@ func New(config *params.CbftConfig, eventMux *event.TypeMux, ctx *node.ServiceCo
 	cbft.router = NewRouter(cbft.handler)
 	cbft.queues = make(map[string]int)
 	cbft.resetCache, _ = lru.New(maxResetCacheSize)
-
 	return cbft
 }
 
@@ -210,18 +209,9 @@ func (cbft *Cbft) getHighestLogical() *BlockExt {
 }
 
 func (cbft *Cbft) ReceivePeerMsg(msg *MsgInfo) {
-	cbft.queueMu.Lock()
-	defer cbft.queueMu.Unlock()
-	count := cbft.queues[msg.PeerID.TerminalString()] + 1
-	if count > maxQueuesLimit {
-		cbft.log.Debug("Discarded msg, exceeded allowance", "peer", msg.PeerID.TerminalString(), "msgType", reflect.TypeOf(msg.Msg), "msgHash", msg.Msg.MsgHash(), "limit", maxQueuesLimit)
-		return;
-	}
 	select {
 	case cbft.peerMsgCh <- msg:
 		cbft.log.Debug("Received message from peer", "peer", msg.PeerID.TerminalString(), "msgType", reflect.TypeOf(msg.Msg), "msgHash", msg.Msg.MsgHash().TerminalString(), "BHash", msg.Msg.BHash().TerminalString())
-		cbft.queues[msg.PeerID.TerminalString()] = count
-
 	case <-cbft.exitCh:
 		cbft.log.Error("Cbft exit")
 	}
@@ -330,13 +320,19 @@ func (cbft *Cbft) receiveLoop() {
 	for {
 		select {
 		case msg := <-cbft.peerMsgCh:
+
+			count := cbft.queues[msg.PeerID.TerminalString()] + 1
+			if count > maxQueuesLimit {
+				cbft.log.Debug("Discarded msg, exceeded allowance", "peer", msg.PeerID.TerminalString(), "msgType", reflect.TypeOf(msg.Msg), "msgHash", msg.Msg.MsgHash(), "limit", maxQueuesLimit)
+				break
+			}
+			cbft.queues[msg.PeerID.TerminalString()] = count
 			cbft.handleMsg(msg)
-			cbft.queueMu.Lock()
 			cbft.queues[msg.PeerID.TerminalString()]--
 			if cbft.queues[msg.PeerID.TerminalString()] == 0 {
 				delete(cbft.queues, msg.PeerID.TerminalString())
 			}
-			cbft.queueMu.Unlock()
+
 		case bt := <-cbft.syncBlockCh:
 			cbft.OnSyncBlock(bt)
 		case bs := <-cbft.executeBlockCh:
@@ -1159,6 +1155,7 @@ func (cbft *Cbft) prepareVoteReceiver(peerID discover.NodeID, vote *prepareVote)
 		ext.timestamp = vote.Timestamp
 	}
 
+	hadSend := (ext.inTree && ext.isExecuted && ext.isConfirmed)
 	ext.prepareVotes.Add(vote)
 
 	cbft.saveBlockExt(vote.Hash, ext)
@@ -1173,7 +1170,9 @@ func (cbft *Cbft) prepareVoteReceiver(peerID discover.NodeID, vote *prepareVote)
 			blockConfirmedTimer.UpdateSince(time.Unix(int64(ext.timestamp), 0))
 		}
 		cbft.log.Debug("Send Confirmed Block", "hash", ext.block.Hash(), "number", ext.block.NumberU64())
-		cbft.handler.SendAllConsensusPeer(&confirmedPrepareBlock{Hash: ext.block.Hash(), Number: ext.block.NumberU64(), VoteBits: ext.prepareVotes.voteBits})
+		if !hadSend {
+			cbft.handler.SendAllConsensusPeer(&confirmedPrepareBlock{Hash: ext.block.Hash(), Number: ext.block.NumberU64(), VoteBits: ext.prepareVotes.voteBits})
+		}
 	}
 
 }
@@ -2020,6 +2019,9 @@ func (cbft *Cbft) OnFastSyncCommitHead(errCh chan error) {
 
 func (cbft *Cbft) needBroadcast(nodeId discover.NodeID, msg Message) bool {
 	peers := cbft.handler.peers.Peers()
+	if len(peers) == 0 {
+		return false
+	}
 	for _, peer := range peers {
 		// exclude currently send peer.
 		if peer.id == nodeId.TerminalString() {
