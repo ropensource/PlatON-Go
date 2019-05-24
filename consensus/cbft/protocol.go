@@ -91,9 +91,9 @@ func (pb *prepareBlock) MsgHash() common.Hash {
 		return common.Hash{}
 	}
 	bytes := make([]byte, 0)
-	bytes = append(bytes, common.Int64ToBytes(int64(pb.Timestamp))...)
-	bytes = append(bytes, pb.ProposalAddr.Bytes()[:5]...)
 	bytes = append(bytes, pb.Block.Hash().Bytes()...)
+	bytes = append(bytes, pb.ProposalAddr.Bytes()[:5]...)
+	bytes = append(bytes, common.Int64ToBytes(int64(pb.Timestamp))...)
 	return produceHash(PrepareBlockMsg, common.BytesToHash(bytes))
 }
 
@@ -151,9 +151,9 @@ func (pv *prepareVote) MsgHash() common.Hash {
 		return common.Hash{}
 	}
 	bytes := make([]byte, 0)
-	bytes = append(bytes, common.Int64ToBytes(int64(pv.Timestamp))...)
-	bytes = append(bytes, pv.ValidatorAddr.Bytes()[:5]...)
 	bytes = append(bytes, pv.Hash.Bytes()...)
+	bytes = append(bytes, pv.ValidatorAddr.Bytes()[:5]...)
+	bytes = append(bytes, common.Int64ToBytes(int64(pv.Timestamp))...)
 	return produceHash(PrepareVoteMsg, common.BytesToHash(bytes))
 }
 
@@ -187,9 +187,9 @@ func (v *viewChange) MsgHash() common.Hash {
 		return common.Hash{}
 	}
 	bytes := make([]byte, 0)
-	bytes = append(bytes, common.Int64ToBytes(int64(v.Timestamp))...)
-	bytes = append(bytes, v.ProposalAddr.Bytes()[:5]...)
 	bytes = append(bytes, v.Signature.Bytes()...)
+	bytes = append(bytes, v.ProposalAddr.Bytes()[:5]...)
+	bytes = append(bytes, common.Int64ToBytes(int64(v.Timestamp))...)
 	return produceHash(ViewChangeMsg, common.BytesToHash(bytes))
 }
 
@@ -256,9 +256,9 @@ func (v *viewChangeVote) MsgHash() common.Hash {
 		return common.Hash{}
 	}
 	bytes := make([]byte, 0)
-	bytes = append(bytes, common.Int64ToBytes(int64(v.Timestamp))...)
-	bytes = append(bytes, v.ValidatorAddr.Bytes()[:5]...)
 	bytes = append(bytes, v.Signature.Bytes()...)
+	bytes = append(bytes, v.ValidatorAddr.Bytes()[:5]...)
+	bytes = append(bytes, common.Int64ToBytes(int64(v.Timestamp))...)
 	return produceHash(ViewChangeVoteMsg, common.BytesToHash(bytes))
 }
 
