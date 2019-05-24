@@ -90,7 +90,10 @@ func (pb *prepareBlock) MsgHash() common.Hash {
 	if pb == nil {
 		return common.Hash{}
 	}
-	return produceHash(PrepareBlockMsg, pb.Block.Hash())
+	bytes := make([]byte, 0)
+	bytes = append(bytes, pb.ProposalAddr.Bytes()...)
+	bytes = append(bytes, pb.Block.Hash().Bytes()...)
+	return produceHash(PrepareBlockMsg, common.BytesToHash(bytes))
 }
 
 func (pb *prepareBlock) BHash() common.Hash {
@@ -146,7 +149,10 @@ func (pv *prepareVote) MsgHash() common.Hash {
 	if pv == nil {
 		return common.Hash{}
 	}
-	return produceHash(PrepareVoteMsg, pv.Hash)
+	bytes := make([]byte, 0)
+	bytes = append(bytes, pv.ValidatorAddr.Bytes()...)
+	bytes = append(bytes, pv.Hash.Bytes()...)
+	return produceHash(PrepareVoteMsg, common.BytesToHash(bytes))
 }
 
 func (pv *prepareVote) BHash() common.Hash {
