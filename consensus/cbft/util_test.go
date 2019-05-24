@@ -42,7 +42,7 @@ func TestRandomOffset_Zero(t *testing.T) {
 	}
 }
 
-func TestSetHash(t *testing.T) {
+func TestProduceHash(t *testing.T) {
 	var hashes mapset.Set
 	hashes = mapset.NewSet()
 	hashes.Add(common.BigToHash(big.NewInt(10)))
@@ -57,15 +57,29 @@ func TestSetHash(t *testing.T) {
 	}
 }
 
-func TestUint2bytes(t *testing.T) {
-	t1 := 1558679713
-	t2 := 1558679714
-	t3 := 1558679715
-	h1 := sha3.Sum256(uint64ToBytes(uint64(t1)))
-	h2 := sha3.Sum256(uint64ToBytes(uint64(t2)))
-	h3 := sha3.Sum256(uint64ToBytes(uint64(t3)))
-
-	t.Log(common.Bytes2Hex(h1[:]))
-	t.Log(common.Bytes2Hex(h2[:]))
-	t.Log(common.Bytes2Hex(h3[:]))
+func TestUint64ToBytes(t *testing.T) {
+	var wants = []struct{
+		src uint64
+		want string
+	}{
+		{
+			src: 1558679713,
+			want: "5fcb2251f5b31c73534c57718f0d60b23bc99898a0c4c4e69ae97b4a09f17205",
+		},
+		{
+			src: 1558679714,
+			want: "2b83fe25cd31f504192d7e9fa725f8d4d334d724feaf35cd26d225050b825683",
+		},
+		{
+			src: 1558679715,
+			want: "8ce02e5594c6da16f9c6d3958119c7ed6f0d25d3b45aeec10bcfdfe258aaf83f",
+		},
+	}
+	for _, v := range wants {
+		target := sha3.Sum256(uint64ToBytes(v.src))
+		t_hex := common.Bytes2Hex(target[:])
+		if t_hex != v.want {
+			t.Error("error")
+		}
+	}
 }
