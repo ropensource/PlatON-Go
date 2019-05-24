@@ -178,7 +178,11 @@ func (v *viewChange) MsgHash() common.Hash {
 	if v == nil {
 		return common.Hash{}
 	}
-	return produceHash(ViewChangeMsg, common.BytesToHash(v.Signature.Bytes()))
+	bytes := make([]byte, 0)
+	bytes = append(bytes, v.ProposalAddr.Bytes()...)
+	bytes = append(bytes, common.Int64ToBytes(int64(v.Timestamp))...)
+	bytes = append(bytes, v.Signature.Bytes()...)
+	return produceHash(ViewChangeMsg, common.BytesToHash(bytes))
 }
 
 func (v *viewChange) BHash() common.Hash {
@@ -243,7 +247,11 @@ func (v *viewChangeVote) MsgHash() common.Hash {
 	if v == nil {
 		return common.Hash{}
 	}
-	return produceHash(ViewChangeVoteMsg, common.BytesToHash(v.Signature.Bytes()))
+	bytes := make([]byte, 0)
+	bytes = append(bytes, v.ValidatorAddr.Bytes()...)
+	bytes = append(bytes, common.Int64ToBytes(int64(v.Timestamp))...)
+	bytes = append(bytes, v.Signature.Bytes()...)
+	return produceHash(ViewChangeVoteMsg, common.BytesToHash(bytes))
 }
 
 func (v *viewChangeVote) BHash() common.Hash {
