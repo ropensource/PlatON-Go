@@ -92,9 +92,9 @@ func (pb *prepareBlock) MsgHash() common.Hash {
 	}
 	bytes := make([]byte, 0)
 	bytes = append(bytes, pb.Block.Hash().Bytes()...)
-	bytes = append(bytes, pb.ProposalAddr.Bytes()[:5]...)
+	bytes = append(bytes, pb.ProposalAddr.Bytes()...)
 	bytes = append(bytes, common.Int64ToBytes(int64(pb.Timestamp))...)
-	return produceHash(PrepareBlockMsg, common.BytesToHash(bytes))
+	return produceHash(PrepareBlockMsg, bytes)
 }
 
 func (pb *prepareBlock) BHash() common.Hash {
@@ -120,7 +120,7 @@ func (pbh *prepareBlockHash) MsgHash() common.Hash {
 	if pbh == nil {
 		return common.Hash{}
 	}
-	return produceHash(PrepareBlockHashMsg, pbh.Hash)
+	return produceHash(PrepareBlockHashMsg, pbh.Hash.Bytes())
 }
 
 func (pbh *prepareBlockHash) BHash() common.Hash {
@@ -152,9 +152,9 @@ func (pv *prepareVote) MsgHash() common.Hash {
 	}
 	bytes := make([]byte, 0)
 	bytes = append(bytes, pv.Hash.Bytes()...)
-	bytes = append(bytes, pv.ValidatorAddr.Bytes()[:5]...)
+	bytes = append(bytes, pv.ValidatorAddr.Bytes()...)
 	bytes = append(bytes, common.Int64ToBytes(int64(pv.Timestamp))...)
-	return produceHash(PrepareVoteMsg, common.BytesToHash(bytes))
+	return produceHash(PrepareVoteMsg, bytes)
 }
 
 func (pv *prepareVote) BHash() common.Hash {
@@ -188,9 +188,9 @@ func (v *viewChange) MsgHash() common.Hash {
 	}
 	bytes := make([]byte, 0)
 	bytes = append(bytes, v.Signature.Bytes()...)
-	bytes = append(bytes, v.ProposalAddr.Bytes()[:5]...)
+	bytes = append(bytes, v.ProposalAddr.Bytes()...)
 	bytes = append(bytes, common.Int64ToBytes(int64(v.Timestamp))...)
-	return produceHash(ViewChangeMsg, common.BytesToHash(bytes))
+	return produceHash(ViewChangeMsg, bytes)
 }
 
 func (v *viewChange) BHash() common.Hash {
@@ -259,7 +259,8 @@ func (v *viewChangeVote) MsgHash() common.Hash {
 	bytes = append(bytes, v.Signature.Bytes()...)
 	bytes = append(bytes, v.ValidatorAddr.Bytes()[:5]...)
 	bytes = append(bytes, common.Int64ToBytes(int64(v.Timestamp))...)
-	return produceHash(ViewChangeVoteMsg, common.BytesToHash(bytes))
+
+	return produceHash(ViewChangeVoteMsg, bytes)
 }
 
 func (v *viewChangeVote) BHash() common.Hash {
@@ -304,7 +305,7 @@ func (cpb *confirmedPrepareBlock) MsgHash() common.Hash {
 	if cpb == nil {
 		return common.Hash{}
 	}
-	return produceHash(ConfirmedPrepareBlockMsg, cpb.Hash)
+	return produceHash(ConfirmedPrepareBlockMsg, cpb.Hash.Bytes())
 }
 
 func (cpb *confirmedPrepareBlock) BHash() common.Hash {
@@ -329,7 +330,7 @@ func (gpb *getHighestPrepareBlock) MsgHash() common.Hash {
 	if gpb == nil {
 		return common.Hash{}
 	}
-	return produceHash(GetHighestPrepareBlockMsg, common.BigToHash(new(big.Int).SetUint64(gpb.Lowest)))
+	return produceHash(GetHighestPrepareBlockMsg, common.BigToHash(new(big.Int).SetUint64(gpb.Lowest)).Bytes())
 }
 
 func (gpb *getHighestPrepareBlock) BHash() common.Hash {
@@ -356,7 +357,7 @@ func (pb *highestPrepareBlock) MsgHash() common.Hash {
 	if pb == nil {
 		return common.Hash{}
 	}
-	return produceHash(HighestPrepareBlockMsg, common.Hash{})
+	return produceHash(HighestPrepareBlockMsg, common.Hash{}.Bytes())
 }
 
 func (pb *highestPrepareBlock) BHash() common.Hash {
@@ -382,7 +383,7 @@ func (gpb *getPrepareBlock) MsgHash() common.Hash {
 	if gpb == nil {
 		return common.Hash{}
 	}
-	return produceHash(GetPrepareBlockMsg, gpb.Hash)
+	return produceHash(GetPrepareBlockMsg, gpb.Hash.Bytes())
 }
 
 func (gpb *getPrepareBlock) BHash() common.Hash {
@@ -409,7 +410,7 @@ func (pv *getPrepareVote) MsgHash() common.Hash {
 	if pv == nil {
 		return common.Hash{}
 	}
-	return produceHash(GetPrepareVoteMsg, pv.Hash)
+	return produceHash(GetPrepareVoteMsg, pv.Hash.Bytes())
 }
 
 func (pv *getPrepareVote) BHash() common.Hash {
@@ -436,7 +437,7 @@ func (pv *prepareVotes) MsgHash() common.Hash {
 	if pv == nil {
 		return common.Hash{}
 	}
-	return produceHash(PrepareVotesMsg, pv.Hash)
+	return produceHash(PrepareVotesMsg, pv.Hash.Bytes())
 }
 
 func (pv *prepareVotes) BHash() common.Hash {
@@ -498,7 +499,7 @@ func (s *cbftStatusData) MsgHash() common.Hash {
 	if s == nil {
 		return common.Hash{}
 	}
-	return produceHash(CBFTStatusMsg, s.CurrentBlock)
+	return produceHash(CBFTStatusMsg, s.CurrentBlock.Bytes())
 }
 
 func (s *cbftStatusData) BHash() common.Hash {

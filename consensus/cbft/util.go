@@ -2,6 +2,7 @@ package cbft
 
 import (
 	"github.com/PlatONnetwork/PlatON-Go/common"
+	"github.com/PlatONnetwork/PlatON-Go/crypto/sha3"
 	"math/rand"
 )
 
@@ -13,13 +14,12 @@ func randomOffset(n int) int {
 	return int(rand.Uint32() % uint32(n))
 }
 
-func produceHash(msgType byte, hash common.Hash) common.Hash {
-	hashByt := hash.Bytes()
-	hashByt[0] = msgType
-	//hashByt[1] = 0
-	//hashByt[2] = 0
-	//hashByt[3] = 0
+func produceHash(msgType byte, bytes []byte) common.Hash {
+	bytes[0] = msgType
+	hashBytes := hasher.Sum(bytes)
 	result := common.Hash{}
-	result.SetBytes(hashByt)
+	result.SetBytes(hashBytes)
 	return result
 }
+
+var hasher = sha3.NewKeccak256()
