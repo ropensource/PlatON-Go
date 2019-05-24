@@ -2,6 +2,7 @@ package cbft
 
 import (
 	"github.com/PlatONnetwork/PlatON-Go/common"
+	"github.com/PlatONnetwork/PlatON-Go/crypto/sha3"
 	"github.com/deckarep/golang-set"
 	"math/big"
 	"testing"
@@ -54,4 +55,17 @@ func TestSetHash(t *testing.T) {
 	} else {
 		t.Error("not exists")
 	}
+}
+
+func TestUint2bytes(t *testing.T) {
+	t1 := 1558679713
+	t2 := 1558679714
+	t3 := 1558679715
+	h1 := sha3.Sum256(uint64ToBytes(uint64(t1)))
+	h2 := sha3.Sum256(uint64ToBytes(uint64(t2)))
+	h3 := sha3.Sum256(uint64ToBytes(uint64(t3)))
+
+	t.Log(common.Bytes2Hex(h1[:]))
+	t.Log(common.Bytes2Hex(h2[:]))
+	t.Log(common.Bytes2Hex(h3[:]))
 }

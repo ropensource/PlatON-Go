@@ -16,10 +16,21 @@ func randomOffset(n int) int {
 
 func produceHash(msgType byte, bytes []byte) common.Hash {
 	bytes[0] = msgType
-	hashBytes := hasher.Sum(bytes)
+	hashBytes := sha3.Sum256(bytes)
 	result := common.Hash{}
-	result.SetBytes(hashBytes)
+	result.SetBytes(hashBytes[:])
 	return result
 }
 
-var hasher = sha3.NewKeccak256()
+func uint64ToBytes(n uint64) []byte {
+	return []byte{
+		byte(n),
+		byte(n >> 8),
+		byte(n >> 16),
+		byte(n >> 24),
+		byte(n >> 32),
+		byte(n >> 40),
+		byte(n >> 48),
+		byte(n >> 56),
+	}
+}
