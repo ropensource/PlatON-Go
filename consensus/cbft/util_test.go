@@ -3,8 +3,6 @@ package cbft
 import (
 	"github.com/PlatONnetwork/PlatON-Go/common"
 	"github.com/PlatONnetwork/PlatON-Go/crypto/sha3"
-	"github.com/deckarep/golang-set"
-	"math/big"
 	"testing"
 )
 
@@ -43,18 +41,34 @@ func TestRandomOffset_Zero(t *testing.T) {
 }
 
 func TestProduceHash(t *testing.T) {
-	var hashes mapset.Set
-	hashes = mapset.NewSet()
-	hashes.Add(common.BigToHash(big.NewInt(10)))
-	hashes.Add(common.BigToHash(big.NewInt(11)))
-	hashes.Add(common.BigToHash(big.NewInt(12)))
-
-	var con interface{} = common.BigToHash(big.NewInt(10))
-	if hashes.Contains(con) {
-		t.Log("exists")
-	} else {
-		t.Error("not exists")
+	var data = []struct{
+		mType byte
+		bytes []byte
+		want string
+	}{
+		{
+			mType: 0x0,
+			bytes: []byte("This is test data in 1"),
+			want: "0xcabbb3ea7b964fb678accab3051cd0893f0e94bca1d34304e9129c7c339bbcb4",
+		},
+		{
+			mType: 0x1,
+			bytes: []byte("This is test data in 2"),
+			want: "0xb4d9ca8710397e752c344724ea4d733473bb3f88afb94a7095c4dd2e4b61487a",
+		},
+		{
+			mType: 0x2,
+			bytes: []byte("This is test data in 3"),
+			want: "0xf449775f29162c3c63c740f93ab298a418145bac26ce120f5a16b55b0f7cb7d4",
+		},
 	}
+	for _, v := range data {
+		hash := produceHash(v.mType, v.bytes)
+		if hash.String() != v.want {
+			t.Error("error")
+		}
+	}
+
 }
 
 func TestUint64ToBytes(t *testing.T) {
