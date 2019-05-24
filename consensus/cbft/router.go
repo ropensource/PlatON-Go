@@ -89,8 +89,12 @@ func (r *router) kConsensusRandomNodes(msgType uint64, condition interface{}) ([
 		return nil, err
 	}
 	existsPeers := r.msgHandler.peers.Peers()
+	log.Debug("kConsensusRandomNodes select node", "msgHash", condition, "cNodesLen", len(cNodes), "peerSetLen", len(existsPeers))
 	consensusPeers := make([]*peer, 0)
 	for _, peer := range existsPeers {
+		if peer.knownMessageHash.Contains(condition) {
+			continue
+		}
 		for _, node := range cNodes {
 			if peer.id == fmt.Sprintf("%x", node.Bytes()[:8]) {
 				consensusPeers = append(consensusPeers, peer)
