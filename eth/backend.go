@@ -539,7 +539,8 @@ func (s *Ethereum) Start(srvr *p2p.Server) error {
 		if flag := cbftEngine.IsConsensusNode(); flag {
 			// self: s.chainConfig.Cbft.NodeID
 			// list: s.chainConfig.Cbft.InitialNodes
-			ok, idxs := needAdd(s.chainConfig.Cbft.NodeID, s.chainConfig.Cbft.InitialNodes)
+			// dep: test
+			/*ok, idxs := needAdd(s.chainConfig.Cbft.NodeID, s.chainConfig.Cbft.InitialNodes)
 			for idx, n := range s.chainConfig.Cbft.InitialNodes {
 				if idxs == nil {
 					break
@@ -550,6 +551,9 @@ func (s *Ethereum) Start(srvr *p2p.Server) error {
 						break
 					}
 				}
+			}*/
+			for _, n := range s.chainConfig.Cbft.InitialNodes {
+				srvr.AddConsensusPeer(discover.NewNode(n.ID, n.IP, n.UDP, n.TCP))
 			}
 		}
 		s.StartMining(1)
