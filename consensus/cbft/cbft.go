@@ -683,11 +683,11 @@ func (cbft *Cbft) OnViewChangeTimeout(view *viewChange) {
 
 	//cbft.mux.Lock()
 	//defer cbft.mux.Lock()
-	cbft.log.Debug(fmt.Sprintf("Check view change timeout send:%v agree:%v", cbft.hadSendViewChange(), cbft.agreeViewChange()))
+	cbft.log.Debug(fmt.Sprintf("Check view change timeout send:%v agree:%v msgHash:%v", cbft.hadSendViewChange(), cbft.agreeViewChange(), view.MsgHash().TerminalString()))
 	if cbft.viewChange != nil && view.Equal(cbft.viewChange) {
 		if cbft.hadSendViewChange() && !cbft.agreeViewChange() {
 			cbft.handleCache()
-			cbft.log.Info("View change timeout", "current view", cbft.viewChange.String())
+			cbft.log.Info("View change timeout", "current view", cbft.viewChange.String(), "msgHash", view.MsgHash().TerminalString())
 			cbft.resetViewChange()
 		}
 	}
@@ -847,7 +847,7 @@ func (cbft *Cbft) ShouldSeal(curTime int64) (bool, error) {
 		peersCount := len(cbft.netLatencyMap)
 		cbft.netLatencyLock.RUnlock()
 		if peersCount < cbft.getThreshold() {
-			inturn = false
+			//inturn = false
 		}
 	}
 	//cbft.log.Debug("Should Seal", "time", curTime, "inturn", inturn, "peers", len(cbft.netLatencyMap))
@@ -884,7 +884,7 @@ func (cbft *Cbft) OnSendViewChange() {
 		cbft.log.Error("New view change failed", "err", err)
 		return
 	}
-	cbft.log.Debug("Send new view", "view", view.String())
+	cbft.log.Debug("Send new view", "view", view.String(), "msgHash", view.MsgHash().TerminalString())
 	cbft.handler.SendAllConsensusPeer(view)
 
 	// gauage
@@ -948,7 +948,7 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 
 	resp.Signature.SetBytes(sign)
 	cbft.viewChangeResp = resp
-
+	cbft.log.Info("Reply viewChangeVote", "msgHash", resp.MsgHash())
 	time.AfterFunc(time.Duration(cbft.config.Period)*time.Second*2, func() {
 		cbft.viewChangeVoteTimeoutCh <- resp
 	})

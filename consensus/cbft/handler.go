@@ -226,8 +226,7 @@ func (h *handler) handleMsg(p *peer) error {
 		if err := msg.Decode(&request); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
-		//p.MarkMessageHash((&request).MsgHash())
-
+		p.MarkMessageHash((&request).MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    &request,
 			PeerID: p.ID(),
@@ -239,8 +238,7 @@ func (h *handler) handleMsg(p *peer) error {
 		if err := msg.Decode(&request); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
-		//p.MarkMessageHash((&request).MsgHash())
-
+		p.MarkMessageHash((&request).MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    &request,
 			PeerID: p.ID(),
