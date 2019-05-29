@@ -507,24 +507,26 @@ func (cbft *Cbft) OnSyncBlock(ext *BlockExt) {
 
 	cbft.log.Debug("Sync block success", "hash", ext.block.Hash(), "number", ext.number)
 
-	cbft.viewChange = ext.view
-	if len(ext.viewChangeVotes) >= cbft.getThreshold() {
-		if err := cbft.checkViewChangeVotes(ext.viewChangeVotes); err != nil {
-			log.Error("Receive prepare invalid block", "err", err)
-			cbft.bp.SyncBlockBP().InvalidBlock(context.TODO(), ext, err, &cbft.RoundState)
-			ext.SetSyncState(err)
-			return
-		}
-		for _, v := range ext.viewChangeVotes {
-			cbft.viewChangeVotes[v.ValidatorAddr] = v
-		}
+	if (cbft.viewChange != nil && !cbft.viewChange.Equal(ext.view)) || !cbft.agreeViewChange() {
+		cbft.viewChange = ext.view
+		if len(ext.viewChangeVotes) >= cbft.getThreshold() {
+			if err := cbft.checkViewChangeVotes(ext.viewChangeVotes); err != nil {
+				log.Error("Receive prepare invalid block", "err", err)
+				cbft.bp.SyncBlockBP().InvalidBlock(context.TODO(), ext, err, &cbft.RoundState)
+				ext.SetSyncState(err)
+				return
+			}
+			for _, v := range ext.viewChangeVotes {
+				cbft.viewChangeVotes[v.ValidatorAddr] = v
+			}
 
-		cbft.clearPending()
-		cbft.ClearChildren(cbft.viewChange.BaseBlockHash, cbft.viewChange.BaseBlockNum, cbft.viewChange.Timestamp)
-		cbft.producerBlocks = NewProducerBlocks(cbft.getValidators().NodeID(int(ext.view.ProposalIndex)), ext.block.NumberU64())
-		if cbft.producerBlocks != nil {
-			cbft.producerBlocks.AddBlock(ext.block)
-			cbft.log.Debug("Add producer block", "hash", ext.block.Hash(), "number", ext.block.Number(), "producer", cbft.producerBlocks.String())
+			cbft.clearPending()
+			cbft.ClearChildren(cbft.viewChange.BaseBlockHash, cbft.viewChange.BaseBlockNum, cbft.viewChange.Timestamp)
+			cbft.producerBlocks = NewProducerBlocks(cbft.getValidators().NodeID(int(ext.view.ProposalIndex)), ext.block.NumberU64())
+			if cbft.producerBlocks != nil {
+				cbft.producerBlocks.AddBlock(ext.block)
+				cbft.log.Debug("Add producer block", "hash", ext.block.Hash(), "number", ext.block.Number(), "producer", cbft.producerBlocks.String())
+			}
 		}
 	}
 	ext.timestamp = cbft.viewChange.Timestamp
@@ -717,7 +719,9 @@ func (cbft *Cbft) OnPrepareBlockHash(peerID discover.NodeID, msg *prepareBlockHa
 	cbft.log.Debug("Received message of prepareBlockHash", "FromPeerId", peerID.String(),
 		"BlockHash", msg.Hash.Hex(), "Number", msg.Number)
 	// Prerequisite: Nodes with PrepareBlock data can forward Hash
-	cbft.handler.Send(peerID, &getPrepareBlock{Hash: msg.Hash, Number: msg.Number})
+	if cbft.blockExtMap.findBlock(msg.Hash, msg.Number) == nil {
+		cbft.handler.Send(peerID, &getPrepareBlock{Hash: msg.Hash, Number: msg.Number})
+	}
 
 	// then: to forward msg
 	if ok := cbft.needBroadcast(peerID, msg); ok {
@@ -753,7 +757,6 @@ func (cbft *Cbft) Seal(chain consensus.ChainReader, block *types.Block, sealResu
 	number := block.NumberU64()
 
 	if number == 0 {
-
 		return errUnknownBlock
 	}
 
@@ -1375,7 +1378,7 @@ func (cbft *Cbft) execute(ext *BlockExt, parent *BlockExt) error {
 	} else {
 		cbft.log.Error("execute block error", "err", err, "block", ext.String(), "parent", parent.String())
 		blockVerifyFailMeter.Mark(1)
-		return errors.New("execute block error")
+		return fmt.Errorf("execute block error, err:%s", err.Error())
 	}
 	return nil
 }
@@ -1503,7 +1506,6 @@ func (cbft *Cbft) CalcNextBlockTime() (time.Time, error) {
 		max := int64(nodeIdx+1) * durationPerNode
 
 		log.Trace("Calc next block time", "min", min, "value", value, "max", max)
-
 		var offset int64
 		if value >= min && value <= max {
 			cnt := int64(cbft.config.Duration) / int64(cbft.config.Period)
@@ -1664,12 +1666,7 @@ func (cbft *Cbft) update() {
 // APIs implements consensus.Engine, returning the user facing RPC API to allow
 // controlling the signer voting.
 func (cbft *Cbft) APIs(chain consensus.ChainReader) []rpc.API {
-	return []rpc.API{{
-		Namespace: "cbft",
-		Version:   "1.0",
-		Service:   &API{chain: chain, cbft: cbft},
-		Public:    false,
-	}}
+	return []rpc.API{}
 }
 
 func (cbft *Cbft) Protocols() []p2p.Protocol {
@@ -1898,25 +1895,25 @@ func (cbft *Cbft) calTurnIndex(timePoint int64, nodeIdx int) bool {
 // producer's signature = header.Extra[32:]
 // public key can be recovered from signature, the length of public key is 65,
 // the length of NodeID is 64, nodeID = publicKey[1:]
-func ecrecover(header *types.Header) (discover.NodeID, []byte, error) {
-	var nodeID discover.NodeID
-	if len(header.Extra) < extraSeal {
-		return nodeID, []byte{}, errMissingSignature
-	}
-	signature := header.Extra[len(header.Extra)-extraSeal:]
-	sealHash := header.SealHash()
-
-	pubkey, err := crypto.Ecrecover(sealHash.Bytes(), signature)
-	if err != nil {
-		return nodeID, []byte{}, err
-	}
-
-	nodeID, err = discover.BytesID(pubkey[1:])
-	if err != nil {
-		return nodeID, []byte{}, err
-	}
-	return nodeID, signature, nil
-}
+//func ecrecover(header *types.Header) (discover.NodeID, []byte, error) {
+//	var nodeID discover.NodeID
+//	if len(header.Extra) < extraSeal {
+//		return nodeID, []byte{}, errMissingSignature
+//	}
+//	signature := header.Extra[len(header.Extra)-extraSeal:]
+//	sealHash := header.SealHash()
+//
+//	pubkey, err := crypto.Ecrecover(sealHash.Bytes(), signature)
+//	if err != nil {
+//		return nodeID, []byte{}, err
+//	}
+//
+//	nodeID, err = discover.BytesID(pubkey[1:])
+//	if err != nil {
+//		return nodeID, []byte{}, err
+//	}
+//	return nodeID, signature, nil
+//}
 
 // verify sign, check the sign is from the right node.
 func verifySign(expectedNodeID discover.NodeID, sealHash common.Hash, signature []byte) error {
@@ -2119,7 +2116,7 @@ func (cbft *Cbft) updateValidator() {
 
 	cbft.afterUpdateValidator()
 
-	if _, e := cbft.getValidators().NodeIndex(cbft.config.NodeID); e == nil {
+	if _, e := cbft.getValidators().NodeIndex(cbft.config.NodeID); e == nil && !newVds.Equal(oldVds) {
 		cbft.eventMux.Post(cbfttypes.UpdateValidatorEvent{})
 		log.Trace("Post UpdateValidatorEvent", "nodeID", cbft.config.NodeID)
 	}
