@@ -12,6 +12,7 @@ import (
 	"github.com/PlatONnetwork/PlatON-Go/ethdb"
 	"github.com/PlatONnetwork/PlatON-Go/event"
 	"github.com/PlatONnetwork/PlatON-Go/node"
+	"github.com/PlatONnetwork/PlatON-Go/p2p"
 	"github.com/PlatONnetwork/PlatON-Go/p2p/discover"
 	"github.com/PlatONnetwork/PlatON-Go/params"
 	"github.com/PlatONnetwork/PlatON-Go/rlp"
@@ -301,6 +302,7 @@ func makeHandler(cbft *Cbft, pid string, msgHash common.Hash) (*handler) {
 	peer := &peer{
 		id: pid,
 		knownMessageHash: mapset.NewSet(),
+		rw: &fakeRW{},
 	}
 	peer.MarkMessageHash(msgHash)
 	peerSets.Register(peer)
@@ -325,4 +327,20 @@ func makePrepareVotes(pri *ecdsa.PrivateKey, timestamp, blockNum uint64, blockHa
 		Votes: []*prepareVote{ pv },
 	}
 	return pvs
+}
+
+type fakeRW struct {
+}
+
+func (rw *fakeRW) ReadMsg() (p2p.Msg, error) {
+	fmt.Println("Read msg.")
+	return p2p.Msg{}, nil
+}
+
+func (rw *fakeRW) WriteMsg(msg p2p.Msg) error {
+	fmt.Println("Write msg")
+	if msg.Code == CBFTStatusMsg {
+		return fmt.Errorf("invalid message type")
+	}
+	return nil
 }
