@@ -28,7 +28,7 @@ func newTestRouter() *router {
 	engine, _, _ := randomCBFT(path, 1)
 	peerId := engine.getValidators().NodeList()[0].TerminalString()
 	handler := makeHandler(engine, peerId, common.Hash{})
-	return NewRouter(handler)
+	return NewRouter(engine, handler)
 }
 
 func TestGossip(t *testing.T) {
