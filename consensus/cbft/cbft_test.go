@@ -2,14 +2,14 @@ package cbft
 
 import (
 	"fmt"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/PlatONnetwork/PlatON-Go/common"
 	"github.com/PlatONnetwork/PlatON-Go/core/types"
 	"github.com/PlatONnetwork/PlatON-Go/crypto"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"sync"
-	"testing"
-	"time"
 )
 
 func TestNewViewChange(t *testing.T) {
@@ -253,9 +253,8 @@ func TestCbft_OnGetHighestPrepareBlock(t *testing.T) {
 
 	engine, _, v := randomCBFT(path, 4)
 
-	close(engine.handler.sendQueue)
-	sendQueue := make(chan *MsgPackage, 20)
-	engine.handler.sendQueue = sendQueue
+	mockHandler := NewMockHandler()
+	engine.handler = mockHandler
 
 	//sendQueue <- &MsgPackage{
 	//	v.validator(2).nodeID.String(),
@@ -271,24 +270,9 @@ func TestCbft_OnGetHighestPrepareBlock(t *testing.T) {
 		engine.blockExtMap.Add(block.block.Hash(), block.number, block)
 	}
 
-	wait := sync.WaitGroup{}
-	wait.Add(1)
-	var msg *MsgPackage
-	go func() {
-		select {
-		case msg = <-engine.handler.sendQueue:
-			wait.Done()
-		}
-	}()
-	time.Sleep(2 * time.Second)
 	assert.Nil(t, engine.OnGetHighestPrepareBlock(v.validator(2).nodeID, &getHighestPrepareBlock{2}))
-	//wait.Wait()
-	t.Log("send success")
 
-	//t.Log(len(sendQueue))
-
-	t.Log(msg)
-
+	assert.Len(t, mockHandler.sendQueue, 1)
 }
 
 func TestCbft_OnHighestPrepareBlock(t *testing.T) {
@@ -296,6 +280,10 @@ func TestCbft_OnHighestPrepareBlock(t *testing.T) {
 	defer os.RemoveAll(path)
 
 	engine, _, v := randomCBFT(path, 4)
+
+	badBlocks := createEmptyBlocks(v.validator(1).privateKey, engine.blockChain.Genesis().Hash(), engine.blockChain.Genesis().NumberU64(), int(maxBlockDist+1))
+
+	assert.Error(t, engine.OnHighestPrepareBlock(v.validator(1).nodeID, &highestPrepareBlock{CommitedBlock: badBlocks}))
 
 	view := makeViewChange(v.validator(1).privateKey, uint64(engine.config.Duration*1000*1+100), 0, engine.blockChain.Genesis().Hash(), 1, v.validator(1).address, nil)
 
@@ -317,6 +305,218 @@ func TestCbft_OnHighestPrepareBlock(t *testing.T) {
 		Votes:         prepare,
 	}
 	engine.OnHighestPrepareBlock(v.validator(1).nodeID, hp)
+}
+
+func TestCbft_OnGetPrepareVote2(t *testing.T) {
+	path := path()
+	defer os.RemoveAll(path)
+
+	engine, _, v := randomCBFT(path, 4)
+
+	mockHandler := NewMockHandler()
+	engine.handler = mockHandler
+
+	// create view by validator 1
+	view := makeViewChange(v.validator(1).privateKey, uint64(engine.config.Duration*1000*1+100), 0, engine.blockChain.Genesis().Hash(), 1, v.validator(1).address, nil)
+
+	blocks := makeConfirmedBlock(v, engine.blockChain.Genesis().Root(), view, 2)
+
+	// create view by validator 2
+	view2 := makeViewChange(v.validator(2).privateKey, uint64(engine.config.Duration*1000*2+100), 2, blocks[1].block.Hash(), 2, v.validator(2).address, blocks[1].prepareVotes.Votes())
+
+	blocks2 := makeConfirmedBlock(v, engine.blockChain.Genesis().Root(), view2, 2)
+
+	states := make([]chan error, 0)
+	for _, b := range blocks {
+		syncState := make(chan error, 1)
+		engine.InsertChain(b.block, syncState)
+		states = append(states, syncState)
+	}
+
+	for _, b := range blocks2 {
+		engine.blockExtMap.Add(b.block.Hash(), b.number, b)
+	}
+
+	for i, s := range states {
+		if err := <-s; err != nil {
+			t.Error(fmt.Sprintf("%d th block error", i))
+		}
+	}
+
+	pv1 := &getPrepareVote{
+		Hash:     common.BytesToHash(Rand32Bytes(32)),
+		Number:   1000,
+		VoteBits: NewBitArray(4),
+	}
+
+	assert.Nil(t, engine.OnGetPrepareVote(v.validator(1).nodeID, pv1))
+
+	assert.Len(t, mockHandler.sendQueue, 0)
+
+	pv1 = &getPrepareVote{
+		Hash:     blocks[1].block.Hash(),
+		Number:   blocks[1].number,
+		VoteBits: NewBitArray(4),
+	}
+
+	assert.Nil(t, engine.OnGetPrepareVote(v.validator(1).nodeID, pv1))
+
+	assert.Len(t, mockHandler.sendQueue, 1)
+
+	mockHandler.clear()
+
+	pv1 = &getPrepareVote{
+		Hash:     blocks[1].block.Hash(),
+		Number:   blocks[1].number,
+		VoteBits: NewBitArray(4),
+	}
+
+	assert.Nil(t, engine.OnGetPrepareVote(v.validator(1).nodeID, pv1))
+
+	assert.Len(t, mockHandler.sendQueue, 1)
+
+}
+
+func TestCbft_OnConfirmedPrepareBlock(t *testing.T) {
+	path := path()
+	defer os.RemoveAll(path)
+
+	engine, _, v := randomCBFT(path, 4)
+
+	mockHandler := NewMockHandler()
+	engine.handler = mockHandler
+
+	// create view by validator 1
+	view := makeViewChange(v.validator(1).privateKey, uint64(engine.config.Duration*1000*1+100), 0, engine.blockChain.Genesis().Hash(), 1, v.validator(1).address, nil)
+
+	blocks := makeConfirmedBlock(v, engine.blockChain.Genesis().Root(), view, 2)
+
+	states := make([]chan error, 0)
+	for _, b := range blocks {
+		syncState := make(chan error, 1)
+		engine.InsertChain(b.block, syncState)
+		states = append(states, syncState)
+	}
+
+	view2 := makeViewChange(v.validator(2).privateKey, uint64(engine.config.Duration*1000*2+100), 2, blocks[1].block.Hash(), 2, v.validator(2).address, blocks[1].prepareVotes.Votes())
+
+	blocks2 := makeConfirmedBlock(v, engine.blockChain.Genesis().Root(), view2, 2)
+
+	engine.blockExtMap.Add(blocks2[0].block.Hash(), blocks2[0].number, blocks2[0])
+
+	copyBits := blocks2[1].prepareVotes.voteBits.copy()
+	blocks2[1].prepareVotes = NewPrepareVoteSet(blocks2[1].prepareVotes.voteBits.Size())
+	engine.blockExtMap.Add(blocks2[1].block.Hash(), blocks2[1].number, blocks2[1])
+	c := &confirmedPrepareBlock{
+		Hash:     blocks2[1].block.Hash(),
+		Number:   blocks2[1].number,
+		VoteBits: copyBits,
+	}
+
+	assert.Nil(t, engine.OnConfirmedPrepareBlock(v.validator(1).nodeID, c))
+
+	assert.Len(t, mockHandler.sendQueue, 1)
+	mockHandler.clear()
+	c = &confirmedPrepareBlock{
+		Hash:     blocks2[0].block.Hash(),
+		Number:   blocks2[0].number,
+		VoteBits: blocks2[0].prepareVotes.voteBits,
+	}
+
+	assert.Nil(t, engine.OnConfirmedPrepareBlock(v.validator(1).nodeID, c))
+	assert.Len(t, mockHandler.sendQueue, 1)
+
+}
+func TestCbft_OnViewChangeVote(t *testing.T) {
+	path := path()
+	defer os.RemoveAll(path)
+
+	engine, _, v := randomCBFT(path, 4)
+	timestamp := uint64(common.Millis(time.Now()))
+
+	view := makeViewChange(v.validator(0).privateKey, timestamp, 0, engine.blockChain.Genesis().Hash(), 0, v.validator(0).address, nil)
+	engine.viewChange = view
+
+	vote0 := makeViewChangeVote(v.validator(1).privateKey, timestamp, 0, engine.blockChain.Genesis().Hash(), 0, v.validator(0).address, 1, v.validator(1).address)
+	assert.Nil(t, engine.OnViewChangeVote(v.validator(1).nodeID, vote0))
+
+	// less 2f+1 votes
+	assert.False(t, engine.agreeViewChange())
+
+	// inconsistent block number
+	voteErrBlockNum := makeViewChangeVote(v.validator(2).privateKey, timestamp, 1, engine.blockChain.Genesis().Hash(), 0, v.validator(0).address, 2, v.validator(2).address)
+	assert.NotNil(t, engine.OnViewChangeVote(v.validator(2).nodeID, voteErrBlockNum))
+	assert.False(t, engine.agreeViewChange())
+
+	// inconsistent timestamp
+	voteErrTs := makeViewChangeVote(v.validator(1).privateKey, 1000, 0, engine.blockChain.Genesis().Hash(), 0, v.validator(0).address, 1, v.validator(1).address)
+	assert.NotNil(t, engine.OnViewChangeVote(v.validator(1).nodeID, voteErrTs))
+	assert.False(t, engine.agreeViewChange())
+
+	// inconsistent block number
+	voteErrBlockHash := makeViewChangeVote(v.validator(2).privateKey, timestamp, 0, common.Hash{}, 0, v.validator(0).address, 2, v.validator(2).address)
+	assert.NotNil(t, engine.OnViewChangeVote(v.validator(2).nodeID, voteErrBlockHash))
+	assert.False(t, engine.agreeViewChange())
+
+	// empty parameters
+	voteEmpty := &viewChangeVote{}
+	assert.NotNil(t, engine.OnViewChangeVote(v.validator(2).nodeID, voteEmpty))
+	assert.False(t, engine.agreeViewChange())
+
+	// parameter error
+	voteErr := makeViewChangeVote(v.validator(2).privateKey, timestamp, 0, common.Hash{}, 0, common.Address{}, 100, common.Address{})
+	assert.NotNil(t, engine.OnViewChangeVote(v.validator(2).nodeID, voteErr))
+	assert.False(t, engine.agreeViewChange())
+
+	vote1 := makeViewChangeVote(v.validator(2).privateKey, timestamp, 0, engine.blockChain.Genesis().Hash(), 0, v.validator(0).address, 2, v.validator(2).address)
+	assert.Nil(t, engine.OnViewChangeVote(v.validator(2).nodeID, vote1))
+
+	// fulfil 2f+1 votes
+	assert.True(t, engine.agreeViewChange())
+
+	vote2 := makeViewChangeVote(v.validator(3).privateKey, timestamp, 0, engine.blockChain.Genesis().Hash(), 0, v.validator(0).address, 3, v.validator(3).address)
+	assert.Nil(t, engine.OnViewChangeVote(v.validator(3).nodeID, vote2))
+
+	assert.True(t, engine.agreeViewChange())
+
+	blocksExt := makeConfirmedBlock(v, engine.blockChain.Genesis().Root(), view, 20)
+	for _, ext := range blocksExt {
+		ch := make(chan error, 1)
+		engine.InsertChain(ext.block, ch)
+		<-ch
+	}
+
+	timestamp = uint64(common.Millis(time.Now()))
+	block := blocksExt[19].block
+	engine.clearViewChange()
+	view0 := makeViewChange(v.validator(0).privateKey, timestamp, block.NumberU64(), block.Hash(), 0, v.validator(0).address, nil)
+	engine.viewChange = view0
+
+	errTs := blocksExt[9].timestamp - 100
+	voteErrTs1 := makeViewChangeVote(v.validator(1).privateKey, errTs, block.NumberU64(), block.Hash(), 0, v.validator(0).address, 1, v.validator(1).address)
+	assert.NotNil(t, engine.OnViewChangeVote(v.validator(1).nodeID, voteErrTs1))
+
+	voteErrTs2 := makeViewChangeVote(v.validator(2).privateKey, errTs, block.NumberU64(), block.Hash(), 0, v.validator(0).address, 2, v.validator(2).address)
+	assert.NotNil(t, engine.OnViewChangeVote(v.validator(2).nodeID, voteErrTs2))
+
+	assert.False(t, engine.agreeViewChange())
+
+	block1 := blocksExt[8].block
+	voteErrBlockNum1 := makeViewChangeVote(v.validator(1).privateKey, timestamp, block1.NumberU64(), block.Hash(), 0, v.validator(0).address, 1, v.validator(1).address)
+	assert.NotNil(t, engine.OnViewChangeVote(v.validator(1).nodeID, voteErrBlockNum1))
+
+	voteErrBlockNum2 := makeViewChangeVote(v.validator(2).privateKey, timestamp, block1.NumberU64(), block.Hash(), 0, v.validator(0).address, 2, v.validator(2).address)
+	assert.NotNil(t, engine.OnViewChangeVote(v.validator(2).nodeID, voteErrBlockNum2))
+
+	assert.False(t, engine.agreeViewChange())
+
+	voteOk1 := makeViewChangeVote(v.validator(1).privateKey, timestamp, block.NumberU64(), block.Hash(), 0, v.validator(0).address, 1, v.validator(1).address)
+	assert.Nil(t, engine.OnViewChangeVote(v.validator(1).nodeID, voteOk1))
+
+	voteOk2 := makeViewChangeVote(v.validator(2).privateKey, timestamp, block.NumberU64(), block.Hash(), 0, v.validator(0).address, 2, v.validator(2).address)
+	assert.Nil(t, engine.OnViewChangeVote(v.validator(2).nodeID, voteOk2))
+
+	assert.True(t, engine.agreeViewChange())
 }
 
 func TestCBFT_OnPrepareVote(t *testing.T) {
@@ -370,6 +570,7 @@ func TestCBFT_OnPrepareVote(t *testing.T) {
 	pvote= makePrepareVote(node.privateKey, uint64(time.Now().UnixNano()/1e6), 0, gen.Hash(), uint32(node.index), node.address)
 	pvote.ValidatorAddr = common.BytesToAddress([]byte("fake address"))
 	err  = engine.OnPrepareVote(node.nodeID, pvote, false)
+
 	assert.NotNil(t, err)
 
 	// whether to accept: cache
@@ -431,3 +632,4 @@ func TestCbft_OnPrepareVotes(t *testing.T) {
 	err = engine.OnPrepareVotes(node.nodeID, pvs)
 	assert.NotNil(t, err)
 }
+
