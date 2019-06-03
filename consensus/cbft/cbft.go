@@ -403,9 +403,9 @@ func (cbft *Cbft) handleMsg(info *MsgInfo) {
 	if !cbft.isRunning() {
 		switch msg.(type) {
 		case *prepareBlock,
-		*prepareVote,
-		*viewChange,
-		*viewChangeVote:
+			*prepareVote,
+			*viewChange,
+			*viewChangeVote:
 			cbft.log.Debug("Cbft is not running, discard consensus message")
 			return
 		}
@@ -717,6 +717,7 @@ func (cbft *Cbft) OnViewChangeVoteTimeout(view *viewChangeVote) {
 			cbft.handleCache()
 			cbft.resetViewChange()
 			cbft.needPending = true
+			cbft.handler.SendPartBroadcast(&getHighestPrepareBlock{cbft.getHighestConfirmed().number})
 		}
 	}
 
@@ -901,7 +902,7 @@ func (cbft *Cbft) OnSendViewChange() {
 	blockHighNumConfirmedGauage.Update(int64(cbft.getHighestConfirmed().number))
 	blockHighNumLogicGauage.Update(int64(cbft.getHighestLogical().number))
 
-	time.AfterFunc(time.Duration(cbft.config.Period)*time.Second, func() {
+	time.AfterFunc(time.Duration(cbft.config.Period)*time.Second*2, func() {
 		cbft.viewChangeTimeoutCh <- view
 	})
 }
@@ -934,7 +935,7 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 		}
 
 		cbft.bp.ViewChangeBP().InvalidViewChange(bpCtx, view, err, &cbft.RoundState)
-		cbft.log.Error("Verify view failed", "err", err, "peer", peerID, "view", view.String())
+		cbft.log.Error("Verify view failed", "err", err, "peer", peerID, "view", view.String(), "local", cbft.viewChange.String())
 		return err
 	}
 
@@ -962,8 +963,8 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 
 	resp.Signature.SetBytes(sign)
 	cbft.viewChangeResp = resp
-	cbft.log.Info("Reply viewChangeVote", "msgHash", resp.MsgHash())
-	time.AfterFunc(time.Duration(cbft.config.Period)*time.Second*2, func() {
+	cbft.log.Info("Response viewChangeVote", "msgHash", resp.MsgHash())
+	time.AfterFunc(time.Duration(cbft.config.Period)*time.Second, func() {
 		cbft.viewChangeVoteTimeoutCh <- resp
 	})
 	cbft.setViewChange(view)
@@ -993,7 +994,7 @@ func (cbft *Cbft) flushReadyBlock() bool {
 	flush := cbft.blockExtMap.GetSubChainWithTwoThirdVotes(cbft.viewChange.BaseBlockHash, cbft.viewChange.BaseBlockNum)
 
 	if len(flush) == 0 {
-		cbft.log.Error("Flush block error")
+		cbft.log.Debug("Enable flushed block is empty")
 		return false
 	}
 
