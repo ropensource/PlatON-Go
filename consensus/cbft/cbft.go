@@ -338,6 +338,17 @@ func (cbft *Cbft) Start(blockChain *core.BlockChain, txPool *core.TxPool, agency
 	return nil
 }
 
+// schedule is responsible for HighestPrepareBlock synchronization
+func (cbft *Cbft) scheduleHighestPrepareBlock() {
+	schedule := time.NewTicker(5 * time.Second)
+	for {
+		select {
+		case <- schedule.C:
+			cbft.handler.SendPartBroadcast(&getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
+		}
+	}
+}
+
 func (cbft *Cbft) receiveLoop() {
 	for {
 		select {
@@ -900,6 +911,10 @@ func (cbft *Cbft) OnSendViewChange() {
 func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 	cbft.log.Debug("Receive view change", "peer", peerID, "view", view.String())
 
+	if view != nil {
+		// priority forwarding
+		cbft.handler.SendAllConsensusPeer(view)
+	}
 	if cbft.viewChange != nil && cbft.viewChange.Equal(view) {
 		cbft.log.Debug("Duplication view change message, discard this")
 		return errDuplicationConsensusMsg
@@ -954,7 +969,7 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 	cbft.setViewChange(view)
 	cbft.bp.InternalBP().SwitchView(bpCtx, view)
 	cbft.bp.ViewChangeBP().SendViewChangeVote(bpCtx, resp, &cbft.RoundState)
-	cbft.handler.SendAllConsensusPeer(view)
+	//cbft.handler.SendAllConsensusPeer(view)
 	cbft.handler.SendAllConsensusPeer(resp)
 
 	//cbft.handler.Send(peerID, cbft.viewChangeResp)
