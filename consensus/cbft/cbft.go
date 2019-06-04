@@ -338,17 +338,6 @@ func (cbft *Cbft) Start(blockChain *core.BlockChain, txPool *core.TxPool, agency
 	return nil
 }
 
-// schedule is responsible for HighestPrepareBlock synchronization
-func (cbft *Cbft) scheduleHighestPrepareBlock() {
-	schedule := time.NewTicker(5 * time.Second)
-	for {
-		select {
-		case <- schedule.C:
-			cbft.handler.SendPartBroadcast(&getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
-		}
-	}
-}
-
 func (cbft *Cbft) receiveLoop() {
 	for {
 		select {
@@ -434,6 +423,10 @@ func (cbft *Cbft) handleMsg(info *MsgInfo) {
 		err = cbft.OnHighestPrepareBlock(peerID, msg)
 	case *prepareBlockHash:
 		err = cbft.OnPrepareBlockHash(peerID, msg)
+	case *getHighestConfirmedStatus:
+		err = cbft.OnGetHighestConfirmedStatus(peerID, msg)
+	case *highestConfirmedStatus:
+		err = cbft.OnHighestConfirmedStatus(peerID, msg)
 	}
 	if err != nil {
 		cbft.log.Error("Handle msg Failed", "error", err, "type", reflect.TypeOf(msg), "peer", peerID)
@@ -645,10 +638,20 @@ func (cbft *Cbft) OnGetHighestPrepareBlock(peerID discover.NodeID, msg *getHighe
 	}
 
 	exts := cbft.blockExtMap.findBlockExtByNumber(commit+1, highest)
+	var largestNum int64= 0
 	for _, ext := range exts {
 		if prepare, err := ext.PrepareBlock(); err == nil {
 			unconfirmedBlock = append(unconfirmedBlock, prepare)
 			votes = append(votes, &prepareVotes{Hash: ext.block.Hash(), Number: ext.number, Votes: ext.Votes()})
+			if prepare.Block.Number().Int64() > largestNum {
+				largestNum = prepare.Block.Number().Int64()
+			}
+		}
+	}
+	if largestNum != 0 {
+		p, err := cbft.handler.PeerSet().Get(peerID.TerminalString())
+		if err != nil {
+			p.SetHighestBn(new(big.Int).SetInt64(largestNum))
 		}
 	}
 	cbft.log.Debug("Send highestPrepareBlock")
@@ -736,6 +739,37 @@ func (cbft *Cbft) OnPrepareBlockHash(peerID discover.NodeID, msg *prepareBlockHa
 		go cbft.handler.SendBroadcast(msg)
 	}
 
+	return nil
+}
+
+func (cbft *Cbft) OnGetHighestConfirmedStatus(peerID discover.NodeID, msg *getHighestConfirmedStatus) error {
+	cbft.log.Debug("Received message of getHighestConfirmedStatus", "FromPeerId", peerID.String(), "Number", msg.highest.Int64())
+	currentNum := cbft.getHighestConfirmed().number
+	if currentNum < msg.highest.Uint64() {
+		p, err := cbft.handler.GetPeer(peerID.TerminalString())
+		if err != nil {
+			p.SetHighestBn(msg.highest)
+			cbft.log.Debug("Current highest smaller and get highestPrepareBlock")
+			cbft.handler.Send(peerID, &getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
+		}
+	} else {
+		cbft.log.Debug("Current highest larger and make reply highestConfirmedStatus msg", "highest", msg.highest.Uint64())
+		cbft.handler.Send(peerID, &highestConfirmedStatus{highest: new(big.Int).SetUint64(currentNum)})
+	}
+	return nil
+}
+
+func (cbft *Cbft) OnHighestConfirmedStatus(peerID discover.NodeID, msg *highestConfirmedStatus) error {
+	cbft.log.Debug("Received message of highestConfirmedStatus", "FromPeerId", peerID.String(), "Number", msg.highest.Int64())
+	currentNum := cbft.getHighestConfirmed().number
+	if currentNum < msg.highest.Uint64() {
+		p, err := cbft.handler.GetPeer(peerID.TerminalString())
+		if err != nil {
+			p.SetHighestBn(msg.highest)
+			cbft.log.Debug("Current highest smaller and get highestPrepareBlock")
+			cbft.handler.Send(peerID, &getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
+		}
+	}
 	return nil
 }
 

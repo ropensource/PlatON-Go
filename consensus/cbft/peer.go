@@ -31,6 +31,9 @@ type peer struct {
 	*p2p.Peer
 	rw p2p.MsgReadWriter
 
+	highestBn *big.Int
+	lock sync.RWMutex
+
 	knownMessageHash mapset.Set
 }
 
@@ -85,8 +88,23 @@ func (p *peer) Handshake(bn *big.Int, head common.Hash) error {
 			return p2p.DiscReadTimeout
 		}
 	}
+	p.highestBn = status.BN
 	// todo: Maybe there is something to be done.
 	return nil
+}
+
+// SetHighest updates the highest number of the peer.
+func (p *peer) SetHighestBn(highestBn *big.Int) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	p.Log().Debug("SetHighstBn success", "peerID", p.id, "oldHighest",p.highestBn.Uint64(), "newHighest", highestBn.Uint64())
+	p.highestBn.Set(highestBn)
+}
+
+func (p *peer) HighestBn() (bn *big.Int) {
+	p.lock.RLock()
+	defer p.lock.RUnlock()
+	return new(big.Int).Set(p.highestBn)
 }
 
 func (p *peer) readStatus(status *cbftStatusData) error {
@@ -186,6 +204,20 @@ func (ps *peerSet) Peers() []*peer {
 	for _, p := range ps.peers {
 		list = append(list, p)
 	}
+	return list
+}
+
+// Returns a list of nodes that are larger than the height of the highest confirmed block.
+func (ps *peerSet) LargerHighestBnPeers(highest *big.Int) []*peer {
+	ps.lock.RLock()
+	defer ps.lock.RUnlock()
+	list := make([]*peer, 0, len(ps.peers))
+	for _, p := range ps.peers {
+		if p.HighestBn().Cmp(highest) > 0 {
+			list = append(list, p)
+		}
+	}
+	// todo: take the largest one.
 	return list
 }
 

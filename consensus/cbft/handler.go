@@ -2,7 +2,9 @@ package cbft
 
 import (
 	"fmt"
+	"math/big"
 	"reflect"
+	"time"
 
 	"github.com/PlatONnetwork/PlatON-Go/log"
 	"github.com/PlatONnetwork/PlatON-Go/p2p"
@@ -33,6 +35,7 @@ type handler interface {
 	SendPartBroadcast(msg Message)
 	Protocols() []p2p.Protocol
 	PeerSet() *peerSet
+	GetPeer(peerID string) (*peer, error)
 }
 
 type baseHandler struct {
@@ -55,6 +58,7 @@ func errResp(code errCode, format string, v ...interface{}) error {
 
 func (h *baseHandler) Start() {
 	go h.sendLoop()
+	go h.syncHighestStatus()
 }
 
 func (h *baseHandler) sendLoop() {
@@ -86,6 +90,13 @@ func (h *baseHandler) sendPeer(m *MsgPackage) {
 			h.peers.Unregister(m.peerID)
 		}
 	}
+}
+
+func (h *baseHandler) GetPeer(peerID string) (*peer, error) {
+	if peerID == "" {
+		return nil, fmt.Errorf("Invalid peer id : %v", peerID)
+	}
+	return h.peers.Get(peerID)
 }
 
 func (h *baseHandler) SendAllConsensusPeer(msg Message) {
@@ -329,8 +340,58 @@ func (h *baseHandler) handleMsg(p *peer) error {
 			PeerID: p.ID(),
 		})
 		return nil
+	case msg.Code == GetHighestConfirmStatusMsg:
+		var request getHighestConfirmedStatus
+		if err := msg.Decode(&request); err != nil {
+			return errResp(ErrDecode, "%v: %v", msg, err)
+		}
+		h.cbft.ReceivePeerMsg(&MsgInfo{
+			Msg: &request,
+			PeerID: p.ID(),
+		})
+		return nil
+	case msg.Code == HighestConfirmedStatusMsg:
+		var request highestConfirmedStatus
+		if err := msg.Decode(&request); err != nil {
+			return errResp(ErrDecode, "%v: %v", msg, err)
+		}
+		h.cbft.ReceivePeerMsg(&MsgInfo{
+			Msg: &request,
+			PeerID: p.ID(),
+		})
+		return nil
 	default:
 	}
 
 	return nil
+}
+
+// syncHighestStatus is responsible for HighestPrepareBlock synchronization
+func (h *baseHandler) syncHighestStatus() {
+	schedule := time.NewTicker(5 * time.Second)
+	for {
+		select {
+		case <- schedule.C:
+			curHighestNum := h.cbft.getHighestConfirmed().number;
+			peers := h.PeerSet().LargerHighestBnPeers(new(big.Int).SetUint64(curHighestNum))
+			if peers != nil {
+				largerNum := curHighestNum
+				largerIndex := -1
+				for index, v := range peers {
+					pHighest := v.highestBn.Uint64()
+					if pHighest > largerNum {
+						largerNum = pHighest
+						largerIndex = index
+					}
+				}
+				if largerIndex != -1 {
+					largerPeer := peers[largerIndex]
+					log.Debug("Timer , send getHighestConfirmedStatus message", "currentHighestBn", curHighestNum, "maxHighestPeer", largerPeer.id, "maxHighestBn", largerNum)
+					h.Send(largerPeer.ID(), &getHighestConfirmedStatus{
+						highest: largerPeer.HighestBn(),
+					})
+				}
+			}
+		}
+	}
 }

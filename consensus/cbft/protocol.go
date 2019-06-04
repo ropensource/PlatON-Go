@@ -28,6 +28,8 @@ const (
 
 	CBFTStatusMsg       = 0x0a
 	PrepareBlockHashMsg = 0x0b
+	GetHighestConfirmStatusMsg = 0x0c
+	HighestConfirmedStatusMsg = 0x0d
 )
 
 type errCode int
@@ -121,11 +123,6 @@ func (pb *prepareBlock) BHash() common.Hash {
 	return pb.Block.Hash()
 }
 
-type prepareBlockHash struct {
-	Hash   common.Hash
-	Number uint64
-}
-
 func (pbh *prepareBlockHash) String() string {
 	if pbh == nil {
 		return ""
@@ -145,6 +142,11 @@ func (pbh *prepareBlockHash) BHash() common.Hash {
 		return common.Hash{}
 	}
 	return pbh.Hash
+}
+
+type prepareBlockHash struct {
+	Hash   common.Hash
+	Number uint64
 }
 
 type prepareVote struct {
@@ -591,6 +593,52 @@ func (s *cbftStatusData) BHash() common.Hash {
 	return s.CurrentBlock
 }
 
+type getHighestConfirmedStatus struct {
+	highest *big.Int
+}
+
+func (s *getHighestConfirmedStatus) String() string {
+	if s == nil {
+		return ""
+	}
+	return fmt.Sprintf("[Highest:%d]", s.highest.Int64())
+}
+
+func (s *getHighestConfirmedStatus) MsgHash() common.Hash {
+	if s == nil {
+		return common.Hash{}
+	}
+	return produceHash(GetHighestConfirmStatusMsg, s.highest.Bytes())
+}
+
+func (s *getHighestConfirmedStatus) BHash() common.Hash {
+	return common.Hash{}
+}
+
+type highestConfirmedStatus struct {
+	highest *big.Int
+}
+
+func (s *highestConfirmedStatus) String() string {
+	if s == nil {
+		return ""
+	}
+	return fmt.Sprintf("[Highest:%d]", s.highest.Int64())
+}
+
+func (s *highestConfirmedStatus) MsgHash() common.Hash {
+	if s == nil {
+		return common.Hash{}
+	}
+	return produceHash(HighestConfirmedStatusMsg, s.highest.Bytes())
+}
+
+func (s *highestConfirmedStatus) BHash() common.Hash {
+	return common.Hash{}
+}
+
+
+
 var (
 	messages = []interface{}{
 		prepareBlock{},
@@ -605,6 +653,8 @@ var (
 		highestPrepareBlock{},
 		cbftStatusData{},
 		prepareBlockHash{},
+		getHighestConfirmedStatus{},
+		highestConfirmedStatus{},
 	}
 )
 
@@ -634,6 +684,10 @@ func MessageType(msg interface{}) uint64 {
 		return CBFTStatusMsg
 	case *prepareBlockHash:
 		return PrepareBlockHashMsg
+	case *getHighestConfirmedStatus:
+		return GetHighestConfirmStatusMsg
+	case *highestConfirmedStatus:
+		return HighestConfirmedStatusMsg
 	}
 	panic(fmt.Sprintf("invalid msg type %v", reflect.TypeOf(msg)))
 }
