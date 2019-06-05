@@ -2,6 +2,7 @@ package cbft
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	sort2 "sort"
 	"time"
@@ -305,6 +306,7 @@ func (cbft *Cbft) viewChanging() bool {
 
 func (cbft *Cbft) AcceptPrepareBlock(request *prepareBlock) AcceptStatus {
 	if cbft.viewChange == nil {
+		cbft.log.Debug("Cache block, viewchange is empty")
 		return Cache
 	}
 
@@ -314,16 +316,20 @@ func (cbft *Cbft) AcceptPrepareBlock(request *prepareBlock) AcceptStatus {
 
 	if request.ProposalIndex != cbft.viewChange.ProposalIndex {
 		if cbft.lastViewChange == nil {
+			cbft.log.Debug("Discard block, lastViewChange is empty")
 			return Discard
 		}
 		if request.ProposalIndex == cbft.lastViewChange.ProposalIndex {
+			cbft.log.Debug("Cache block, ProposalIndex is lastviewchange")
 			return Cache
 		} else {
+			cbft.log.Debug("Discard block, unknown block")
 			return Discard
 		}
 	}
 
 	if cbft.viewChanging() && !cbft.agreeViewChange() {
+		cbft.log.Debug("Cache block, is viewchanging")
 		return Cache
 	}
 	return Accept
@@ -548,7 +554,7 @@ func (cbft *Cbft) afterUpdateValidator() {
 }
 
 func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote) error {
-	log.Debug("Receive view change vote", "peer", peerID, "vote", vote.String())
+	log.Debug("Receive view change vote", "peer", peerID, "vote", vote.String(), "view", cbft.viewChange.String())
 	bpCtx := context.WithValue(context.Background(), "peer", peerID)
 	if cbft.needBroadcast(peerID, vote) {
 		go cbft.handler.SendBroadcast(vote)
@@ -559,7 +565,7 @@ func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote)
 	if cbft.viewChange != nil && vote.EqualViewChange(cbft.viewChange) {
 		if err := cbft.verifyValidatorSign(cbft.viewChange.BaseBlockNum, vote.ValidatorIndex, vote.ValidatorAddr, vote, vote.Signature[:]); err == nil {
 			cbft.viewChangeVotes[vote.ValidatorAddr] = vote
-			log.Info("Agree receive view change response", "peer", peerID, "prepareVotes", len(cbft.viewChangeVotes))
+			log.Info("Agree receive view change response", "peer", peerID, "viewChangeVotes", len(cbft.viewChangeVotes))
 		} else {
 			cbft.log.Warn("Verify sign failed", "peer", peerID, "vote", vote.String())
 			return err
@@ -567,16 +573,16 @@ func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote)
 	} else {
 		switch {
 		case cbft.viewChange == nil:
-			cbft.bp.ViewChangeBP().InvalidViewChangeVote(bpCtx, vote, errNotExistViewChange, &cbft.RoundState)
+			cbft.bp.ViewChangeBP().InvalidViewChangeVote(bpCtx, vote, errNotExistViewChange, cbft)
 			return errNotExistViewChange
 		case vote.Timestamp != cbft.viewChange.Timestamp:
-			cbft.bp.ViewChangeBP().InvalidViewChangeVote(bpCtx, vote, errTimestampNotEqual, &cbft.RoundState)
+			cbft.bp.ViewChangeBP().InvalidViewChangeVote(bpCtx, vote, errTimestampNotEqual, cbft)
 			return errTimestampNotEqual
 		case vote.BlockHash != cbft.viewChange.BaseBlockHash:
-			cbft.bp.ViewChangeBP().InvalidViewChangeVote(bpCtx, vote, errBlockHashNotEqual, &cbft.RoundState)
+			cbft.bp.ViewChangeBP().InvalidViewChangeVote(bpCtx, vote, errBlockHashNotEqual, cbft)
 			return errBlockHashNotEqual
 		case vote.ProposalAddr != cbft.viewChange.ProposalAddr:
-			cbft.bp.ViewChangeBP().InvalidViewChangeVote(bpCtx, vote, errInvalidProposalAddr, &cbft.RoundState)
+			cbft.bp.ViewChangeBP().InvalidViewChangeVote(bpCtx, vote, errInvalidProposalAddr, cbft)
 			return errInvalidProposalAddr
 		default:
 			return errInvalidViewChangeVotes
@@ -598,7 +604,7 @@ func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote)
 			Hash:   vote.BlockHash,
 			Number: vote.BlockNum,
 		})
-		cbft.bp.ViewChangeBP().TwoThirdViewChangeVotes(bpCtx, &cbft.RoundState)
+		cbft.bp.ViewChangeBP().TwoThirdViewChangeVotes(bpCtx, cbft)
 		cbft.flushReadyBlock()
 		cbft.producerBlocks = NewProducerBlocks(cbft.config.NodeID, cbft.viewChange.BaseBlockNum)
 		cbft.clearPending()
@@ -632,6 +638,7 @@ func (cbft *Cbft) broadcastBlock(ext *BlockExt) {
 	p := &prepareBlock{Block: ext.block, ProposalIndex: uint32(validator.Index), ProposalAddr: validator.Address}
 
 	cbft.addPrepareBlockVote(p)
+	ext.prepareBlock = p
 	if cbft.viewChange != nil && !cbft.agreeViewChange() && cbft.viewChange.BaseBlockNum < ext.block.NumberU64() {
 		log.Debug("Pending block", "number", ext.block.Number())
 		cbft.pendingBlocks[ext.block.Hash()] = p
@@ -733,6 +740,7 @@ type BlockExt struct {
 	proposalIndex   uint32
 	proposalAddr    common.Address
 	prepareVotes    *prepareVoteSet //all prepareVotes for block
+	prepareBlock    *prepareBlock
 	view            *viewChange
 	viewChangeVotes []*viewChangeVote
 	parent          *BlockExt
@@ -740,13 +748,46 @@ type BlockExt struct {
 	syncState       chan error
 }
 
+func (b BlockExt) MarshalJSON() ([]byte, error) {
+	type BlockExt struct {
+		Timestamp       uint64      `json:"timestamp"`
+		InTree          bool        `json:"in_tree"`
+		InTurn          bool        `json:"in_turn"`
+		Executing       bool        `json:"executing"`
+		IsExecuted      bool        `json:"is_executed"`
+		IsSigned        bool        `json:"is_signed"`
+		IsConfirmed     bool        `json:"is_confirmed"`
+		Number          uint64      `json:"block_number"`
+		RcvTime         int64       `json:"receive_time"`
+		Hash            common.Hash `json:"block_hash"`
+		Parent          common.Hash `json:"parent_hash"`
+		ViewChangeVotes int         `json:"viewchange_votes"`
+		PrepareVotes    int         `json:"prepare_votes"`
+	}
+	ext := BlockExt{
+		Timestamp:       b.timestamp,
+		InTree:          b.inTree,
+		InTurn:          b.inTurn,
+		Executing:       b.executing,
+		IsExecuted:      b.isExecuted,
+		IsSigned:        b.isSigned,
+		IsConfirmed:     b.isConfirmed,
+		Number:          b.number,
+		RcvTime:         b.rcvTime,
+		ViewChangeVotes: len(b.viewChangeVotes),
+		PrepareVotes:    b.prepareVotes.Len(),
+	}
+
+	return json.Marshal(&ext)
+}
+
 func (b BlockExt) String() string {
 	if b.block == nil {
-		return fmt.Sprintf("number:%d inTree:%v inTurn:%v isExecuted:%v, isSigned:%v isConfirmed:%v rcvTime:%d prepareVotes:%d children:%d",
-			b.number, b.inTree, b.inTurn, b.isExecuted, b.isSigned, b.isConfirmed, b.rcvTime, b.prepareVotes.Len(), len(b.children))
+		return fmt.Sprintf("number:%d inTree:%v inTurn:%v isExecuted:%v, isSigned:%v isConfirmed:%v timestamp:%d rcvTime:%d prepareVotes:%d children:%d",
+			b.number, b.inTree, b.inTurn, b.isExecuted, b.isSigned, b.isConfirmed, b.timestamp, b.rcvTime, b.prepareVotes.Len(), len(b.children))
 	}
-	return fmt.Sprintf("hash:%s number:%d inTree:%v inTurn:%v isExecuted:%v, isSigned:%v isConfirmed:%v rcvTime:%d prepareVotes:%d children:%d",
-		b.block.Hash().TerminalString(), b.block.NumberU64(), b.inTree, b.inTurn, b.isExecuted, b.isSigned, b.isConfirmed, b.rcvTime, b.prepareVotes.Len(), len(b.children))
+	return fmt.Sprintf("hash:%s number:%d inTree:%v inTurn:%v isExecuted:%v, isSigned:%v isConfirmed:%v timestamp:%d rcvTime:%d prepareVotes:%d children:%d",
+		b.block.Hash().TerminalString(), b.block.NumberU64(), b.inTree, b.inTurn, b.isExecuted, b.isSigned, b.isConfirmed, b.timestamp, b.rcvTime, b.prepareVotes.Len(), len(b.children))
 }
 
 func (b *BlockExt) SetSyncState(err error) {
@@ -756,17 +797,11 @@ func (b *BlockExt) SetSyncState(err error) {
 	}
 }
 func (b *BlockExt) PrepareBlock() (*prepareBlock, error) {
-	if b.block == nil {
+
+	if b.prepareBlock == nil {
 		return nil, errors.Errorf("empty block")
 	}
-	return &prepareBlock{
-		Timestamp:       b.timestamp,
-		ProposalIndex:   b.proposalIndex,
-		ProposalAddr:    b.proposalAddr,
-		Block:           b.block,
-		View:            b.view,
-		ViewChangeVotes: b.viewChangeVotes,
-	}, nil
+	return b.prepareBlock, nil
 }
 
 func (b *BlockExt) IsParent(hash common.Hash) bool {
@@ -783,12 +818,11 @@ func (b *BlockExt) Merge(ext *BlockExt) {
 			b.proposalAddr = ext.proposalAddr
 			b.proposalIndex = ext.proposalIndex
 		}
+		if b.prepareBlock == nil {
+			b.prepareBlock = ext.prepareBlock
+		}
 		b.prepareVotes.Merge(ext.prepareVotes)
 
-		if b.proposalAddr == emptyAddr {
-			b.proposalAddr = ext.proposalAddr
-			b.proposalIndex = ext.proposalIndex
-		}
 		if ext.syncState != nil && b.syncState != nil {
 			panic("invalid syncState: double state channel")
 		}
@@ -865,6 +899,7 @@ func NewBlockExtByPrepareBlock(pb *prepareBlock, threshold int) *BlockExt {
 		timestamp:     pb.Timestamp,
 		proposalIndex: pb.ProposalIndex,
 		proposalAddr:  pb.ProposalAddr,
+		prepareBlock:  pb,
 		inTree:        false,
 		executing:     false,
 		isExecuted:    false,
