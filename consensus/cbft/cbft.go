@@ -1205,7 +1205,7 @@ func (cbft *Cbft) prepareVoteReceiver(peerID discover.NodeID, vote *prepareVote)
 
 	//receive enough signature broadcast
 	if ext.inTree && ext.isExecuted && ext.isConfirmed {
-		cbft.bp.PrepareBP().TwoThirdVotes(context.TODO(), ext, cbft)
+		cbft.bp.PrepareBP().TwoThirdVotes(context.TODO(), vote, cbft)
 		if h := cbft.blockExtMap.FindHighestConfirmedWithHeader(); h != nil {
 			cbft.bp.InternalBP().NewHighestConfirmedBlock(context.TODO(), ext, cbft)
 			cbft.highestConfirmed.Store(h)

@@ -137,7 +137,7 @@ func (bp defaultPrepareBP) DiscardVote(ctx context.Context, block *prepareVote, 
 
 }
 
-func (bp defaultPrepareBP) SendPrepareVote(ctx context.Context, ext *BlockExt, cbft *Cbft) {
+func (bp defaultPrepareBP) SendPrepareVote(ctx context.Context, ext *prepareVote, cbft *Cbft) {
 
 }
 
@@ -153,7 +153,7 @@ func (bp defaultPrepareBP) InvalidViewChangeVote(ctx context.Context, block *pre
 
 }
 
-func (bp defaultPrepareBP) TwoThirdVotes(ctx context.Context, ext *BlockExt, cbft *Cbft) {
+func (bp defaultPrepareBP) TwoThirdVotes(ctx context.Context, ext *prepareVote, cbft *Cbft) {
 
 }
 
