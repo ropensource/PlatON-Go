@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/PlatONnetwork/PlatON-Go/common"
+	"github.com/PlatONnetwork/PlatON-Go/log"
 	"os"
 	"testing"
 )
 
 func TestLogPrepareBP_ReceiveVote(t *testing.T) {
+	log.Root().SetHandler(log.StdoutHandler)
 	path := path()
 	defer os.RemoveAll(path)
 	engine, _, _ := randomCBFT(path, 1)
@@ -21,6 +23,7 @@ func TestLogPrepareBP_ReceiveVote(t *testing.T) {
 	logBP.PrepareBP().SendPrepareVote(ctx, pvote, engine)
 	logBP.PrepareBP().InvalidVote(ctx, pvote, fmt.Errorf("fail:%v",""), engine)
 	logBP.PrepareBP().TwoThirdVotes(ctx, pvote, engine)
+	t.Log("done")
 }
 
 func BenchmarkLogInternalBP_ExecuteBlock(b *testing.B) {
