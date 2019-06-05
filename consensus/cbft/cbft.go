@@ -471,9 +471,12 @@ END:
 			return
 		}
 
+		//check current timestamp match view's timestamp
+		now := time.Now().Unix()
 		if cbft.isRunning() && cbft.agreeViewChange() &&
 			cbft.viewChange.ProposalAddr == validator.Address &&
-			uint32(validator.Index) == cbft.viewChange.ProposalIndex {
+			uint32(validator.Index) == cbft.viewChange.ProposalIndex &&
+			now-int64(cbft.viewChange.Timestamp) > cbft.config.Duration {
 			// do something check
 			shouldSeal <- nil
 		} else {
@@ -968,7 +971,7 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 		cbft.viewChangeVoteTimeoutCh <- resp
 	})
 	cbft.setViewChange(view)
-	cbft.bp.InternalBP().SwitchView(bpCtx, view)
+	cbft.bp.InternalBP().SwitchView(bpCtx, view, cbft)
 	cbft.bp.ViewChangeBP().SendViewChangeVote(bpCtx, resp, cbft)
 	//cbft.handler.SendAllConsensusPeer(view)
 	cbft.handler.SendAllConsensusPeer(resp)
@@ -1315,9 +1318,9 @@ func (cbft *Cbft) executeBlock(blocks []*BlockExt) {
 		start := time.Now()
 		err := cbft.execute(ext, ext.parent)
 		if err != nil {
-			cbft.bp.InternalBP().InvalidBlock(context.TODO(), ext.block.Hash(), ext.block.NumberU64(), err)
+			cbft.bp.InternalBP().InvalidBlock(context.TODO(), ext.block.Hash(), ext.timestamp, ext.block.NumberU64(), err)
 		}
-		cbft.bp.InternalBP().ExecuteBlock(context.TODO(), ext.block.Hash(), ext.block.NumberU64(), time.Now().Sub(start))
+		cbft.bp.InternalBP().ExecuteBlock(context.TODO(), ext.block.Hash(), ext.block.NumberU64(), ext.timestamp, time.Now().Sub(start))
 		blockExecuteTimer.UpdateSince(start)
 		//send syncState after execute block
 		ext.SetSyncState(err)
