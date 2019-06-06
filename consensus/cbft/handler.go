@@ -389,7 +389,7 @@ func (h *baseHandler) syncHighestStatus() {
 					largerPeer := peers[largerIndex]
 					log.Debug("Timer , send getHighestConfirmedStatus message", "currentHighestBn", curHighestNum, "maxHighestPeer", largerPeer.id, "maxHighestBn", largerNum)
 					h.Send(largerPeer.ID(), &getHighestConfirmedStatus{
-						highest: largerPeer.HighestBn(),
+						highest: largerPeer.HighestBn().Uint64(),
 					})
 				}
 			}

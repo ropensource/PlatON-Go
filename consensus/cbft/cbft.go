@@ -759,29 +759,29 @@ func (cbft *Cbft) OnPrepareBlockHash(peerID discover.NodeID, msg *prepareBlockHa
 }
 
 func (cbft *Cbft) OnGetHighestConfirmedStatus(peerID discover.NodeID, msg *getHighestConfirmedStatus) error {
-	cbft.log.Debug("Received message of getHighestConfirmedStatus", "FromPeerId", peerID.TerminalString(), "Number", msg.highest.Int64())
+	cbft.log.Debug("Received message of getHighestConfirmedStatus", "FromPeerId", peerID.TerminalString(), "Number", msg.highest)
 	currentNum := cbft.getHighestConfirmed().number
-	if currentNum < msg.highest.Uint64() {
+	if currentNum < msg.highest {
 		p, err := cbft.handler.GetPeer(peerID.TerminalString())
 		if err != nil {
-			p.SetHighestBn(msg.highest)
+			p.SetHighestBn(new(big.Int).SetUint64(msg.highest))
 			cbft.log.Debug("Current highest smaller and get highestPrepareBlock")
 			cbft.handler.Send(peerID, &getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
 		}
 	} else {
-		cbft.log.Debug("Current highest larger and make reply highestConfirmedStatus msg", "highest", msg.highest.Uint64())
-		cbft.handler.Send(peerID, &highestConfirmedStatus{highest: new(big.Int).SetUint64(currentNum)})
+		cbft.log.Debug("Current highest larger and make reply highestConfirmedStatus msg", "highest", msg.highest)
+		cbft.handler.Send(peerID, &highestConfirmedStatus{highest: currentNum})
 	}
 	return nil
 }
 
 func (cbft *Cbft) OnHighestConfirmedStatus(peerID discover.NodeID, msg *highestConfirmedStatus) error {
-	cbft.log.Debug("Received message of highestConfirmedStatus", "FromPeerId", peerID.String(), "Number", msg.highest.Int64())
+	cbft.log.Debug("Received message of highestConfirmedStatus", "FromPeerId", peerID.String(), "Number", msg.highest)
 	currentNum := cbft.getHighestConfirmed().number
-	if currentNum < msg.highest.Uint64() {
+	if currentNum < msg.highest {
 		p, err := cbft.handler.GetPeer(peerID.TerminalString())
 		if err != nil {
-			p.SetHighestBn(msg.highest)
+			p.SetHighestBn(new(big.Int).SetUint64(msg.highest))
 			cbft.log.Debug("Current highest smaller and get highestPrepareBlock")
 			cbft.handler.Send(peerID, &getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
 		}
