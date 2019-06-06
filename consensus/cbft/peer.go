@@ -217,6 +217,7 @@ func (ps *peerSet) LargerHighestBnPeers(highest *big.Int) []*peer {
 			list = append(list, p)
 		}
 	}
+	log.Debug("get larger highest peers", "count", len(list), "peers", formatPeers(list))
 	// todo: take the largest one.
 	return list
 }

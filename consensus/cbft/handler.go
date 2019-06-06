@@ -378,7 +378,7 @@ func (h *baseHandler) syncHighestStatus() {
 				largerNum := curHighestNum
 				largerIndex := -1
 				for index, v := range peers {
-					pHighest := v.highestBn.Uint64()
+					pHighest := v.HighestBn().Uint64()
 					if pHighest > largerNum {
 						largerNum = pHighest
 						largerIndex = index
