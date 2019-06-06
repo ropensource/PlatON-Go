@@ -44,6 +44,7 @@ func newPeer(p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
 		id:               fmt.Sprintf("%x", p.ID().Bytes()[:8]),
 		term:             make(chan struct{}),
 		knownMessageHash: mapset.NewSet(),
+		highestBn: new(big.Int),
 	}
 }
 
