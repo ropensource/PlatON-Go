@@ -178,7 +178,7 @@ func (h *baseHandler) handler(p *p2p.Peer, rw p2p.MsgReadWriter) error {
 		hash = head.Hash()
 	)
 	p.Log().Debug("CBFT peer connected, do handshake", "name", peer.Name())
-	if err := peer.Handshake(head.Number, hash); err != nil {
+	if err := peer.Handshake(new(big.Int).SetUint64(h.cbft.getHighestConfirmed().number), hash); err != nil {
 		p.Log().Debug("CBFT handshake failed", "err", err)
 		return err
 	} else {
@@ -389,7 +389,7 @@ func (h *baseHandler) syncHighestStatus() {
 					largerPeer := peers[largerIndex]
 					log.Debug("Timer , send getHighestConfirmedStatus message", "currentHighestBn", curHighestNum, "maxHighestPeer", largerPeer.id, "maxHighestBn", largerNum)
 					h.Send(largerPeer.ID(), &getHighestConfirmedStatus{
-						highest: largerPeer.HighestBn().Uint64(),
+						highest: curHighestNum,
 					})
 				}
 			}

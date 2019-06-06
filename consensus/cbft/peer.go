@@ -88,7 +88,7 @@ func (p *peer) Handshake(bn *big.Int, head common.Hash) error {
 			return p2p.DiscReadTimeout
 		}
 	}
-	p.highestBn = status.BN
+	p.SetHighestBn(status.BN)
 	// todo: Maybe there is something to be done.
 	return nil
 }
@@ -213,6 +213,7 @@ func (ps *peerSet) LargerHighestBnPeers(highest *big.Int) []*peer {
 	defer ps.lock.RUnlock()
 	list := make([]*peer, 0, len(ps.peers))
 	for _, p := range ps.peers {
+		log.Debug("LargerHighestBnPeers", "pHighest", p.HighestBn(), "highest", highest.Uint64(), "peer", p.id)
 		if p.HighestBn().Cmp(highest) > 0 {
 			list = append(list, p)
 		}
