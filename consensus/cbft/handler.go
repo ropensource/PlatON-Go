@@ -375,6 +375,7 @@ func (h *baseHandler) syncHighestStatus() {
 			curHighestNum := h.cbft.getHighestConfirmed().number;
 			peers := h.PeerSet().LargerHighestBnPeers(new(big.Int).SetUint64(curHighestNum))
 			if peers != nil {
+				log.Debug("sync highest status", "curHighestNum", curHighestNum, "peers", len(peers))
 				largerNum := curHighestNum
 				largerIndex := -1
 				for index, v := range peers {
