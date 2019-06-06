@@ -725,8 +725,8 @@ func (cbft *Cbft) OnViewChangeVoteTimeout(view *viewChangeVote) {
 }
 
 func (cbft *Cbft) OnPrepareBlockHash(peerID discover.NodeID, msg *prepareBlockHash) error {
-	cbft.log.Debug("Received message of prepareBlockHash", "FromPeerId", peerID.String(),
-		"BlockHash", msg.Hash.Hex(), "Number", msg.Number)
+	cbft.log.Debug("Received message of prepareBlockHash", "FromPeerId", peerID.TerminalString(),
+		"BlockHash", msg.Hash.TerminalString(), "Number", msg.Number)
 	// Prerequisite: Nodes with PrepareBlock data can forward Hash
 	if cbft.blockExtMap.findBlock(msg.Hash, msg.Number) == nil {
 		cbft.handler.Send(peerID, &getPrepareBlock{Hash: msg.Hash, Number: msg.Number})
