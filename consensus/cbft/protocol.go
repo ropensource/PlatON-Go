@@ -633,7 +633,7 @@ func (s *getHighestConfirmedStatus) MsgHash() common.Hash {
 	if s == nil {
 		return common.Hash{}
 	}
-	return produceHash(GetHighestConfirmStatusMsg, s.highest.Bytes())
+	return produceHash(GetHighestConfirmStatusMsg, uint64ToBytes(s.highest.Uint64()))
 }
 
 func (s *getHighestConfirmedStatus) BHash() common.Hash {
@@ -655,7 +655,7 @@ func (s *highestConfirmedStatus) MsgHash() common.Hash {
 	if s == nil {
 		return common.Hash{}
 	}
-	return produceHash(HighestConfirmedStatusMsg, s.highest.Bytes())
+	return produceHash(HighestConfirmedStatusMsg, uint64ToBytes(s.highest.Uint64()))
 }
 
 func (s *highestConfirmedStatus) BHash() common.Hash {
