@@ -76,6 +76,47 @@ func (vv ViewChangeVotes) String() string {
 	return s
 }
 
+func (vv ViewChangeVotes) MarshalJSON() ([]byte, error) {
+	type Vote struct {
+		Address common.Address  `json:"address"`
+		Vote    *viewChangeVote `json:"vote"`
+	}
+	type Votes struct {
+		Votes []*Vote `json:"votes"`
+	}
+
+	votes := &Votes{
+		Votes: make([]*Vote, 0),
+	}
+	for k, v := range vv {
+		votes.Votes = append(votes.Votes, &Vote{
+			Address: k,
+			Vote:    v,
+		})
+	}
+	return json.Marshal(votes)
+}
+
+func (vv ViewChangeVotes) UnmarshalJSON(b []byte) error {
+	type Vote struct {
+		Address common.Address  `json:"address"`
+		Vote    *viewChangeVote `json:"vote"`
+	}
+	type Votes struct {
+		Votes []*Vote `json:"votes"`
+	}
+	var votes Votes
+	err := json.Unmarshal(b, &votes)
+	if err != nil {
+		return err
+	}
+
+	for _, vote := range votes.Votes {
+		vv[vote.Address] = vote.Vote
+	}
+	return nil
+}
+
 func (rs RoundState) String() string {
 
 	return fmt.Sprintf("[ master:%v, viewChange:%s, viewChangeResp:%s, viewChangeVotes:%s, lastViewChange:%s, lastViewChangeVotes:%s, pendingVotes:%s, pendingBlocks:%s, processingVotes:%s, localHighestPrepareVoteNum:%d, blockExtMap:%s",
@@ -431,6 +472,8 @@ func (cbft *Cbft) pendingProcess() {
 	}
 
 	for _, pv := range pendingVote {
+		cbft.log.Debug("Handle cache pending votes", "hash", pv.Hash, "number", pv.Number)
+		cbft.SetLocalHighestPrepareNum(pv.Number)
 		ext := cbft.blockExtMap.findBlock(pv.Hash, pv.Number)
 		if ext != nil {
 			ext.prepareVotes.Add(pv)
@@ -440,6 +483,7 @@ func (cbft *Cbft) pendingProcess() {
 	}
 
 	for _, v := range pendingBlock {
+		cbft.log.Debug("Handle cache pending votes", "hash", v.Block.Hash(), "number", v.Block.Number())
 		cbft.handler.SendAllConsensusPeer(v)
 	}
 
@@ -455,9 +499,9 @@ func (cbft *Cbft) newViewChange() (*viewChange, error) {
 
 	ext := cbft.getHighestConfirmed()
 
-	if ext.number != cbft.localHighestPrepareVoteNum {
+	if ext.number < cbft.localHighestPrepareVoteNum {
 		//todo ask prepare vote to other, need optimize
-		cbft.handler.SendAllConsensusPeer(&getHighestPrepareBlock{Lowest: cbft.localHighestPrepareVoteNum})
+		cbft.handler.SendAllConsensusPeer(&getHighestPrepareBlock{Lowest: ext.number})
 
 		return nil, errInvalidConfirmNumTooLow
 	}
@@ -556,6 +600,7 @@ func (cbft *Cbft) afterUpdateValidator() {
 func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote) error {
 	log.Debug("Receive view change vote", "peer", peerID, "vote", vote.String(), "view", cbft.viewChange.String())
 	bpCtx := context.WithValue(context.Background(), "peer", peerID)
+	cbft.bp.ViewChangeBP().ReceiveViewChangeVote(bpCtx, vote, cbft)
 	if cbft.needBroadcast(peerID, vote) {
 		go cbft.handler.SendBroadcast(vote)
 	}
@@ -604,7 +649,7 @@ func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote)
 			Hash:   vote.BlockHash,
 			Number: vote.BlockNum,
 		})
-		cbft.bp.ViewChangeBP().TwoThirdViewChangeVotes(bpCtx, cbft)
+		cbft.bp.ViewChangeBP().TwoThirdViewChangeVotes(bpCtx, cbft.viewChange, cbft.viewChangeVotes, cbft)
 		cbft.flushReadyBlock()
 		cbft.producerBlocks = NewProducerBlocks(cbft.config.NodeID, cbft.viewChange.BaseBlockNum)
 		cbft.clearPending()

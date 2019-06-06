@@ -345,7 +345,7 @@ func (cbft *Cbft) scheduleHighestPrepareBlock() {
 	schedule := time.NewTicker(5 * time.Second)
 	for {
 		select {
-		case <- schedule.C:
+		case <-schedule.C:
 			cbft.handler.SendPartBroadcast(&getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
 		}
 	}
@@ -1096,7 +1096,7 @@ func (cbft *Cbft) OnNewPrepareBlock(nodeId discover.NodeID, request *prepareBloc
 		//receive 2f+1 view vote , clear last view state
 		if cbft.agreeViewChange() {
 			viewChangeConfirmedTimer.UpdateSince(time.Unix(int64(cbft.viewChange.Timestamp), 0))
-			cbft.bp.ViewChangeBP().TwoThirdViewChangeVotes(bpCtx, cbft)
+			cbft.bp.ViewChangeBP().TwoThirdViewChangeVotes(bpCtx, cbft.viewChange, cbft.viewChangeVotes, cbft)
 			var newHeader *types.Header
 			viewBlock := cbft.blockExtMap.findBlock(cbft.viewChange.BaseBlockHash, cbft.viewChange.BaseBlockNum)
 
@@ -1199,6 +1199,8 @@ func (cbft *Cbft) prepareVoteReceiver(peerID discover.NodeID, vote *prepareVote)
 	hadSend := (ext.inTree && ext.isExecuted && ext.isConfirmed)
 	ext.prepareVotes.Add(vote)
 
+	cbft.log.Trace("Add prepare vote", "number", ext.number, "votes", ext.prepareVotes.Len())
+
 	cbft.saveBlockExt(vote.Hash, ext)
 
 	//receive enough signature broadcast
@@ -1286,9 +1288,9 @@ func (cbft *Cbft) sendPrepareVote(ext *BlockExt) {
 
 		sign, err := cbft.signMsg(pv)
 		if err == nil {
-			cbft.SetLocalHighestPrepareNum(pv.Number)
 			pv.Signature.SetBytes(sign)
 			if cbft.viewChange != nil && !cbft.agreeViewChange() && cbft.viewChange.BaseBlockNum < ext.block.NumberU64() {
+				cbft.log.Debug("Cache prepareVote, view is changing", "prepareVote", pv.String(), "view", cbft.viewChange.String(), "len", len(cbft.viewChangeVotes))
 				cbft.pendingVotes.Add(pv.Hash, pv)
 			} else {
 				ext.prepareVotes.Add(pv)
@@ -1296,6 +1298,7 @@ func (cbft *Cbft) sendPrepareVote(ext *BlockExt) {
 				cbft.log.Debug("Broadcast prepare vote", "vote", pv.String())
 				cbft.handler.SendAllConsensusPeer(pv)
 				cbft.bp.PrepareBP().SendPrepareVote(context.TODO(), pv, cbft)
+				cbft.SetLocalHighestPrepareNum(pv.Number)
 			}
 		} else {
 			log.Error("Signature failed", "hash", ext.block.Hash(), "number", ext.block.NumberU64(), "err", err)
