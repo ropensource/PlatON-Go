@@ -32,7 +32,7 @@ type peer struct {
 	rw p2p.MsgReadWriter
 
 	highestBn *big.Int
-	lock sync.RWMutex
+	lock      sync.RWMutex
 
 	knownMessageHash mapset.Set
 }
@@ -73,13 +73,13 @@ func (p *peer) Handshake(bn *big.Int, head common.Hash) error {
 		errc <- p.readStatus(&status)
 		if status.BN != nil {
 			p.Log().Debug("Receive the cbftStatusData message", "blockHash", status.CurrentBlock.TerminalString(), "blockNumber", status.BN.Int64())
+			p.SetHighestBn(status.BN)
 		}
 	}()
 	timeout := time.NewTicker(handshakeTimeout)
 	defer timeout.Stop()
 	for i := 0; i < 2; i++ {
 		select {
-
 		case err := <-errc:
 			if err != nil {
 				return err
@@ -88,17 +88,18 @@ func (p *peer) Handshake(bn *big.Int, head common.Hash) error {
 			return p2p.DiscReadTimeout
 		}
 	}
-	p.SetHighestBn(status.BN)
 	// todo: Maybe there is something to be done.
 	return nil
 }
 
 // SetHighest updates the highest number of the peer.
 func (p *peer) SetHighestBn(highestBn *big.Int) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	p.Log().Debug("SetHighstBn success", "peerID", p.id, "oldHighest",p.highestBn.Uint64(), "newHighest", highestBn.Uint64())
-	p.highestBn.Set(highestBn)
+	if highestBn != nil {
+		p.lock.Lock()
+		defer p.lock.Unlock()
+		p.Log().Debug("set highest number success", "peerID", p.id, "oldHighest", p.highestBn.Uint64(), "newHighest", highestBn.Uint64())
+		p.highestBn.Set(highestBn)
+	}
 }
 
 func (p *peer) HighestBn() (bn *big.Int) {
