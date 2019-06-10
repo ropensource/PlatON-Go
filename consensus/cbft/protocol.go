@@ -619,21 +619,21 @@ func (s *cbftStatusData) BHash() common.Hash {
 }
 
 type getHighestConfirmedStatus struct {
-	highest uint64
+	Highest uint64
 }
 
 func (s *getHighestConfirmedStatus) String() string {
 	if s == nil {
 		return ""
 	}
-	return fmt.Sprintf("[Highest:%d]", s.highest)
+	return fmt.Sprintf("[Highest:%d]", s.Highest)
 }
 
 func (s *getHighestConfirmedStatus) MsgHash() common.Hash {
 	if s == nil {
 		return common.Hash{}
 	}
-	return produceHash(GetHighestConfirmStatusMsg, uint64ToBytes(s.highest))
+	return produceHash(GetHighestConfirmStatusMsg, uint64ToBytes(s.Highest))
 }
 
 func (s *getHighestConfirmedStatus) BHash() common.Hash {
@@ -641,21 +641,21 @@ func (s *getHighestConfirmedStatus) BHash() common.Hash {
 }
 
 type highestConfirmedStatus struct {
-	highest uint64
+	Highest uint64
 }
 
 func (s *highestConfirmedStatus) String() string {
 	if s == nil {
 		return ""
 	}
-	return fmt.Sprintf("[Highest:%d]", s.highest)
+	return fmt.Sprintf("[Highest:%d]", s.Highest)
 }
 
 func (s *highestConfirmedStatus) MsgHash() common.Hash {
 	if s == nil {
 		return common.Hash{}
 	}
-	return produceHash(HighestConfirmedStatusMsg, uint64ToBytes(s.highest))
+	return produceHash(HighestConfirmedStatusMsg, uint64ToBytes(s.Highest))
 }
 
 func (s *highestConfirmedStatus) BHash() common.Hash {

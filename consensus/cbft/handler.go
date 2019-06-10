@@ -346,7 +346,7 @@ func (h *baseHandler) handleMsg(p *peer) error {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
 		h.cbft.ReceivePeerMsg(&MsgInfo{
-			Msg: &request,
+			Msg:    &request,
 			PeerID: p.ID(),
 		})
 		return nil
@@ -356,7 +356,7 @@ func (h *baseHandler) handleMsg(p *peer) error {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
 		h.cbft.ReceivePeerMsg(&MsgInfo{
-			Msg: &request,
+			Msg:    &request,
 			PeerID: p.ID(),
 		})
 		return nil
@@ -371,10 +371,10 @@ func (h *baseHandler) syncHighestStatus() {
 	schedule := time.NewTicker(5 * time.Second)
 	for {
 		select {
-		case <- schedule.C:
-			curHighestNum := h.cbft.getHighestConfirmed().number;
+		case <-schedule.C:
+			curHighestNum := h.cbft.getHighestConfirmed().number
 			peers := h.PeerSet().LargerHighestBnPeers(new(big.Int).SetUint64(curHighestNum))
-			if peers != nil {
+			if peers != nil && len(peers) != 0 {
 				log.Debug("sync highest status", "curHighestNum", curHighestNum, "peers", len(peers))
 				largerNum := curHighestNum
 				largerIndex := -1
@@ -388,9 +388,11 @@ func (h *baseHandler) syncHighestStatus() {
 				if largerIndex != -1 {
 					largerPeer := peers[largerIndex]
 					log.Debug("Timer , send getHighestConfirmedStatus message", "currentHighestBn", curHighestNum, "maxHighestPeer", largerPeer.id, "maxHighestBn", largerNum)
-					h.Send(largerPeer.ID(), &getHighestConfirmedStatus{
-						highest: curHighestNum,
-					})
+					msg := &getHighestConfirmedStatus{
+						Highest: curHighestNum,
+					}
+					log.Debug("Send getHighestConfirmedStatus message", "msg", msg.String())
+					h.Send(largerPeer.ID(), msg)
 				}
 			}
 		}
