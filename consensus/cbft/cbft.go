@@ -759,7 +759,7 @@ func (cbft *Cbft) OnPrepareBlockHash(peerID discover.NodeID, msg *prepareBlockHa
 }
 
 func (cbft *Cbft) OnGetHighestConfirmedStatus(peerID discover.NodeID, msg *getHighestConfirmedStatus) error {
-	cbft.log.Debug("Received message of getHighestConfirmedStatus", "peerID", peerID.TerminalString(), "Number", msg.Highest, "msgHash", msg.MsgHash().TerminalString())
+	cbft.log.Debug("Received message of getHighestConfirmedStatus", "FromPeerId", peerID.TerminalString(), "Number", msg.Highest, "msgHash", msg.MsgHash().TerminalString())
 	currentNum := cbft.getHighestConfirmed().number
 	if currentNum < msg.Highest {
 		p, err := cbft.handler.GetPeer(peerID.TerminalString())
@@ -776,7 +776,7 @@ func (cbft *Cbft) OnGetHighestConfirmedStatus(peerID discover.NodeID, msg *getHi
 }
 
 func (cbft *Cbft) OnHighestConfirmedStatus(peerID discover.NodeID, msg *highestConfirmedStatus) error {
-	cbft.log.Debug("Received message of highestConfirmedStatus", "FromPeerId", peerID.String(), "Number", msg.Highest)
+	cbft.log.Debug("Received message of highestConfirmedStatus", "FromPeerId", peerID.TerminalString(), "Number", msg.Highest)
 	currentNum := cbft.getHighestConfirmed().number
 	if currentNum < msg.Highest {
 		p, err := cbft.handler.GetPeer(peerID.TerminalString())
