@@ -120,7 +120,7 @@ func (p *peer) SetLogicHighestBn(highestBn *big.Int) {
 		p.cLock.Lock()
 		defer p.cLock.Unlock()
 		p.Log().Debug("Set logic highest number", "peerID", p.id, "oldLogicHighest", p.logicHigBn.Uint64(), "newLogicHighest", highestBn.Uint64())
-		p.confirmedHigBn.Set(highestBn)
+		p.logicHigBn.Set(highestBn)
 	}
 }
 
