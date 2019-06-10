@@ -652,20 +652,10 @@ func (cbft *Cbft) OnGetHighestPrepareBlock(peerID discover.NodeID, msg *getHighe
 	}
 
 	exts := cbft.blockExtMap.findBlockExtByNumber(commit+1, highest)
-	var largestNum int64 = 0
 	for _, ext := range exts {
 		if prepare, err := ext.PrepareBlock(); err == nil {
 			unconfirmedBlock = append(unconfirmedBlock, prepare)
 			votes = append(votes, &prepareVotes{Hash: ext.block.Hash(), Number: ext.number, Votes: ext.Votes()})
-			if prepare.Block.Number().Int64() > largestNum {
-				largestNum = prepare.Block.Number().Int64()
-			}
-		}
-	}
-	if largestNum != 0 {
-		p, err := cbft.handler.PeerSet().Get(peerID.TerminalString())
-		if err != nil {
-			p.SetConfirmedHighestBn(new(big.Int).SetInt64(largestNum))
 		}
 	}
 	cbft.log.Debug("Send highestPrepareBlock")
@@ -687,9 +677,19 @@ func (cbft *Cbft) OnHighestPrepareBlock(peerID discover.NodeID, msg *highestPrep
 	}
 
 	if len(msg.CommitedBlock)+len(cbft.syncBlockCh) < cap(cbft.syncBlockCh) {
+		var largestNum int64 = 0
 		for _, block := range msg.CommitedBlock {
 			cbft.log.Debug("Sync Highest Block", "number", block.NumberU64())
 			cbft.InsertChain(block, nil)
+			if block.Number().Int64() > largestNum {
+				largestNum = block.Number().Int64()
+			}
+		}
+		if largestNum != 0 {
+			p, err := cbft.handler.PeerSet().Get(peerID.TerminalString())
+			if err != nil {
+				p.SetConfirmedHighestBn(new(big.Int).SetInt64(largestNum))
+			}
 		}
 	}
 
