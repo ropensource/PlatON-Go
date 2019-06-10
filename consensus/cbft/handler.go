@@ -178,7 +178,9 @@ func (h *baseHandler) handler(p *p2p.Peer, rw p2p.MsgReadWriter) error {
 		hash = head.Hash()
 	)
 	p.Log().Debug("CBFT peer connected, do handshake", "name", peer.Name())
-	if err := peer.Handshake(new(big.Int).SetUint64(h.cbft.getHighestConfirmed().number), hash); err != nil {
+	confirmedBn := h.cbft.getHighestConfirmed().number
+	logicBn := h.cbft.getHighestLogical().number
+	if err := peer.Handshake(new(big.Int).SetUint64(confirmedBn), new(big.Int).SetUint64(logicBn), hash); err != nil {
 		p.Log().Debug("CBFT handshake failed", "err", err)
 		return err
 	} else {
@@ -368,30 +370,55 @@ func (h *baseHandler) handleMsg(p *peer) error {
 
 // syncHighestStatus is responsible for HighestPrepareBlock synchronization
 func (h *baseHandler) syncHighestStatus() {
-	schedule := time.NewTicker(5 * time.Second)
+	confirmedTicker := time.NewTicker(5 * time.Second)
+	logicTicker := time.NewTicker(4 * time.Second)
 	for {
 		select {
-		case <-schedule.C:
+		case <-confirmedTicker.C:
 			curHighestNum := h.cbft.getHighestConfirmed().number
-			peers := h.PeerSet().LargerHighestBnPeers(new(big.Int).SetUint64(curHighestNum))
+			peers := h.PeerSet().ConfirmedHighestBnPeers(new(big.Int).SetUint64(curHighestNum))
 			if peers != nil && len(peers) != 0 {
-				log.Debug("sync highest status", "curHighestNum", curHighestNum, "peers", len(peers))
+				log.Debug("Sync confirmed highest status", "curHighestNum", curHighestNum, "peers", len(peers))
 				largerNum := curHighestNum
 				largerIndex := -1
 				for index, v := range peers {
-					pHighest := v.HighestBn().Uint64()
+					pHighest := v.ConfirmedHighestBn().Uint64()
 					if pHighest > largerNum {
-						largerNum = pHighest
-						largerIndex = index
+						largerNum, largerIndex = pHighest, index
 					}
 				}
 				if largerIndex != -1 {
 					largerPeer := peers[largerIndex]
-					log.Debug("Timer , send getHighestConfirmedStatus message", "currentHighestBn", curHighestNum, "maxHighestPeer", largerPeer.id, "maxHighestBn", largerNum)
+					log.Debug("ConfirmedTicker, send getHighestConfirmedStatus message", "currentHighestBn", curHighestNum, "maxHighestPeer", largerPeer.id, "maxHighestBn", largerNum)
 					msg := &getHighestConfirmedStatus{
 						Highest: curHighestNum,
+						Type: HIGHEST_CONFIRMED_BLOCK,
 					}
-					log.Debug("Send getHighestConfirmedStatus message", "msg", msg.String())
+					log.Debug("Send getHighestConfirmedStatus message for confirmed number", "msg", msg.String())
+					h.Send(largerPeer.ID(), msg)
+				}
+			}
+		case <-logicTicker.C:
+			curLogicHighestNum := h.cbft.getHighestLogical().number
+			peers := h.PeerSet().LogicHighestBnPeers(new(big.Int).SetUint64(curLogicHighestNum))
+			if peers != nil && len(peers) != 0 {
+				log.Debug("Sync logic highest status", "curLogicHighestNum", curLogicHighestNum, "peers", len(peers))
+				largerNum := curLogicHighestNum
+				largerIndex := -1
+				for index, v := range peers {
+					pHighest := v.LogicHighestBn().Uint64()
+					if pHighest > largerNum {
+						largerNum, largerIndex = pHighest, index
+					}
+				}
+				if largerIndex != -1 {
+					largerPeer := peers[largerIndex]
+					log.Debug("LogicTicker, send getHighestConfirmedStatus message", "currentHighestBn", curLogicHighestNum, "maxLogicHighestPeer", largerPeer.id, "maxLogicHighestBn", largerNum)
+					msg := &getHighestConfirmedStatus{
+						Highest: curLogicHighestNum,
+						Type: HIGHEST_LOGIC_BLOCK,
+					}
+					log.Debug("Send getHighestConfirmedStatus message for logic number", "msg", msg.String())
 					h.Send(largerPeer.ID(), msg)
 				}
 			}

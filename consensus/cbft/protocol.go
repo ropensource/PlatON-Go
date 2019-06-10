@@ -33,6 +33,11 @@ const (
 	HighestConfirmedStatusMsg = 0x0d
 )
 
+const (
+	HIGHEST_CONFIRMED_BLOCK = iota			// for highestConfirmedBlock
+	HIGHEST_LOGIC_BLOCK						// for highestLogicBlock
+)
+
 type errCode int
 
 const (
@@ -593,15 +598,16 @@ func (v *signBitArray) BHash() common.Hash {
 }
 
 type cbftStatusData struct {
-	BN           *big.Int
-	CurrentBlock common.Hash
+	LogicBn			*big.Int
+	ConfirmedBn     *big.Int
+	CurrentBlock 	common.Hash
 }
 
 func (s *cbftStatusData) String() string {
 	if s == nil {
 		return ""
 	}
-	return fmt.Sprintf("[BlockNumber:%d, BlockHash:%s]", s.BN.Int64(), s.CurrentBlock.String())
+	return fmt.Sprintf("[confirmedBn:%d, logicBn:%d, BlockHash:%s]", s.ConfirmedBn.Int64(), s.LogicBn.Int64(), s.CurrentBlock.String())
 }
 
 func (s *cbftStatusData) MsgHash() common.Hash {
@@ -620,6 +626,7 @@ func (s *cbftStatusData) BHash() common.Hash {
 
 type getHighestConfirmedStatus struct {
 	Highest uint64
+	Type 	uint64
 }
 
 func (s *getHighestConfirmedStatus) String() string {
@@ -633,7 +640,10 @@ func (s *getHighestConfirmedStatus) MsgHash() common.Hash {
 	if s == nil {
 		return common.Hash{}
 	}
-	return produceHash(GetHighestConfirmStatusMsg, uint64ToBytes(s.Highest))
+	byt := make([]byte, 0)
+	byt = append(byt, uint64ToBytes(s.Highest)...)
+	byt = append(byt, uint64ToBytes(s.Type)...)
+	return produceHash(GetHighestConfirmStatusMsg, byt)
 }
 
 func (s *getHighestConfirmedStatus) BHash() common.Hash {
@@ -642,6 +652,7 @@ func (s *getHighestConfirmedStatus) BHash() common.Hash {
 
 type highestConfirmedStatus struct {
 	Highest uint64
+	Type 	uint64
 }
 
 func (s *highestConfirmedStatus) String() string {
@@ -655,7 +666,10 @@ func (s *highestConfirmedStatus) MsgHash() common.Hash {
 	if s == nil {
 		return common.Hash{}
 	}
-	return produceHash(HighestConfirmedStatusMsg, uint64ToBytes(s.Highest))
+	byt := make([]byte, 0)
+	byt = append(byt, uint64ToBytes(s.Highest)...)
+	byt = append(byt, uint64ToBytes(s.Type)...)
+	return produceHash(HighestConfirmedStatusMsg, byt)
 }
 
 func (s *highestConfirmedStatus) BHash() common.Hash {
