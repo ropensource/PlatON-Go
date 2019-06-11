@@ -403,6 +403,7 @@ func (cbft *Cbft) handleMsg(info *MsgInfo) {
 	if !cbft.isRunning() {
 		switch msg.(type) {
 		case *prepareBlock,
+			*prepareBlockHash,
 			*prepareVote,
 			*viewChange,
 			*viewChangeVote:
@@ -687,7 +688,7 @@ func (cbft *Cbft) OnHighestPrepareBlock(peerID discover.NodeID, msg *highestPrep
 		}
 		if largestNum != 0 {
 			p, err := cbft.handler.PeerSet().Get(peerID.TerminalString())
-			if err != nil {
+			if err == nil {
 				p.SetConfirmedHighestBn(new(big.Int).SetInt64(largestNum))
 			}
 		}
