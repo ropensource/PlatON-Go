@@ -76,6 +76,14 @@ func (vv ViewChangeVotes) String() string {
 	return s
 }
 
+func (vv ViewChangeVotes) Bits(cnt int) string {
+	bitArray := NewBitArray(uint32(cnt))
+	for _, v := range vv {
+		bitArray.SetIndex(v.ValidatorIndex, true)
+	}
+	return bitArray.String()
+}
+
 func (vv ViewChangeVotes) MarshalJSON() ([]byte, error) {
 	type Vote struct {
 		Address common.Address  `json:"address"`
@@ -214,7 +222,7 @@ func (cbft *Cbft) checkViewChangeVotes(votes []*viewChangeVote) error {
 
 	for _, vote := range votes {
 		if vote.EqualViewChange(cbft.viewChange) {
-			if err := cbft.verifyValidatorSign(cbft.viewChange.BaseBlockNum, vote.ValidatorIndex, vote.ValidatorAddr, vote, vote.Signature[:]); err != nil {
+			if err := cbft.verifyValidatorSign(cbft.nextRoundValidator(cbft.viewChange.BaseBlockNum), vote.ValidatorIndex, vote.ValidatorAddr, vote, vote.Signature[:]); err != nil {
 				log.Error("Verify validator failed", "vote", vote.String(), "err", err)
 				return errInvalidViewChangeVotes
 			}
@@ -316,6 +324,13 @@ func (cbft *Cbft) hadSendViewChange() bool {
 	return cbft.viewChanging() && cbft.master
 }
 
+func (cbft *Cbft) validViewChange() bool {
+	//check current timestamp match view's timestamp
+	maxViewProducerBlocksLimit := uint64(cbft.config.Duration) / cbft.config.Period
+	now := time.Now().Unix()
+	return (now-int64(cbft.viewChange.Timestamp) < cbft.config.Duration) && (cbft.producerBlocks == nil || uint64(cbft.producerBlocks.Len()) < maxViewProducerBlocksLimit)
+}
+
 func (cbft *Cbft) viewChanging() bool {
 	return cbft.viewChange != nil
 }
@@ -348,6 +363,11 @@ func (cbft *Cbft) viewChanging() bool {
 func (cbft *Cbft) AcceptPrepareBlock(request *prepareBlock) AcceptStatus {
 	if cbft.viewChange == nil {
 		cbft.log.Debug("Cache block, viewchange is empty")
+		return Cache
+	}
+
+	if cbft.viewChange.Timestamp > request.Timestamp && cbft.viewChange.BaseBlockNum < request.Block.NumberU64() {
+		cbft.log.Debug("Cache block", "view", cbft.viewChange.String(), "prepareBlock", request.String())
 		return Cache
 	}
 
@@ -592,9 +612,11 @@ func (cbft *Cbft) setViewChange(view *viewChange) {
 }
 
 func (cbft *Cbft) afterUpdateValidator() {
-	if _, err := cbft.getValidators().NodeIndex(cbft.config.NodeID); err != nil {
-		cbft.master = false
-	}
+	cbft.master = false
+}
+
+func (cbft *Cbft) nextRoundValidator(blockNumber uint64) uint64 {
+	return blockNumber + 1
 }
 
 func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote) error {
@@ -608,7 +630,7 @@ func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote)
 	//defer cbft.mux.Unlock()
 	hadAgree := cbft.agreeViewChange()
 	if cbft.viewChange != nil && vote.EqualViewChange(cbft.viewChange) {
-		if err := cbft.verifyValidatorSign(cbft.viewChange.BaseBlockNum, vote.ValidatorIndex, vote.ValidatorAddr, vote, vote.Signature[:]); err == nil {
+		if err := cbft.verifyValidatorSign(cbft.nextRoundValidator(cbft.viewChange.BaseBlockNum), vote.ValidatorIndex, vote.ValidatorAddr, vote, vote.Signature[:]); err == nil {
 			cbft.viewChangeVotes[vote.ValidatorAddr] = vote
 			log.Info("Agree receive view change response", "peer", peerID, "viewChangeVotes", len(cbft.viewChangeVotes))
 		} else {
@@ -654,9 +676,21 @@ func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote)
 		cbft.producerBlocks = NewProducerBlocks(cbft.config.NodeID, cbft.viewChange.BaseBlockNum)
 		cbft.clearPending()
 		cbft.ClearChildren(cbft.viewChange.BaseBlockHash, cbft.viewChange.BaseBlockNum, cbft.viewChange.Timestamp)
+
+		cbft.log.Info("Previous round state",
+			"logicalNum", cbft.getHighestLogical().number,
+			"logicalHash", cbft.getHighestLogical().block.Hash(),
+			"logicalTimestamp", cbft.getHighestLogical().block.Time(),
+			"logicalVoteBits", cbft.getHighestLogical().prepareVotes.voteBits.String(),
+			"confirmedNum", cbft.getHighestConfirmed().number,
+			"confirmedHash", cbft.getHighestConfirmed().block.Hash(),
+			"confirmedTimestamp", cbft.getHighestConfirmed().block.Time(),
+			"confirmedVoteBits", cbft.getHighestConfirmed().prepareVotes.voteBits.String(),
+			"view", cbft.getHighestLogical().view.String(),
+		)
 	}
 
-	log.Info("Receive viewchange vote", "msg", vote.String(), "had votes", len(cbft.viewChangeVotes))
+	log.Info("Receive viewchange vote", "msg", vote.String(), "had votes", len(cbft.viewChangeVotes), "voteBits", cbft.viewChangeVotes.Bits(cbft.getValidators().Len()))
 	return nil
 }
 
@@ -689,7 +723,7 @@ func (cbft *Cbft) broadcastBlock(ext *BlockExt) {
 		cbft.pendingBlocks[ext.block.Hash()] = p
 		return
 	} else {
-		log.Debug("Send block", "number", ext.block.Number())
+		log.Debug("Send block", "nodeID", cbft.config.NodeID, "number", ext.block.Number(), "hash", ext.block.Hash())
 		cbft.handler.SendAllConsensusPeer(p)
 	}
 }
@@ -1251,7 +1285,7 @@ func (bm *BlockExtMap) RemoveBlock(block *BlockExt) {
 
 func (bm *BlockExtMap) FindHighestConfirmed(hash common.Hash, number uint64) *BlockExt {
 	var highest *BlockExt
-	for be := bm.findChild(hash, number); be != nil && be.prepareVotes.Len() >= bm.threshold; be = bm.findChild(hash, number) {
+	for be := bm.findChild(hash, number); be != nil && be.prepareVotes.Len() >= bm.threshold && be.isExecuted; be = bm.findChild(hash, number) {
 		highest = be
 		hash = be.block.Hash()
 		number = be.number
@@ -1263,7 +1297,7 @@ func (bm *BlockExtMap) FindHighestConfirmedWithHeader() *BlockExt {
 	var highest *BlockExt
 	hash := bm.head.block.Hash()
 	number := bm.head.block.NumberU64()
-	for be := bm.findChild(hash, number); be != nil && be.prepareVotes.Len() >= bm.threshold; be = bm.findChild(hash, number) {
+	for be := bm.findChild(hash, number); be != nil && be.prepareVotes.Len() >= bm.threshold && be.isExecuted; be = bm.findChild(hash, number) {
 		highest = be
 		hash = be.block.Hash()
 		number = be.number
@@ -1273,7 +1307,7 @@ func (bm *BlockExtMap) FindHighestConfirmedWithHeader() *BlockExt {
 
 func (bm *BlockExtMap) FindHighestLogical(hash common.Hash, number uint64) *BlockExt {
 	var highest *BlockExt
-	for be := bm.findChild(hash, number); be != nil && be.block != nil; be = bm.findChild(hash, number) {
+	for be := bm.findChild(hash, number); be != nil && be.block != nil && be.isExecuted; be = bm.findChild(hash, number) {
 		highest = be
 		hash = be.block.Hash()
 		number = be.number
