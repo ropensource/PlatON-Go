@@ -104,7 +104,7 @@ func (p *peer) SetConfirmedHighestBn(highestBn *big.Int) {
 	if highestBn != nil {
 		p.cLock.Lock()
 		defer p.cLock.Unlock()
-		p.Log().Debug("Set confirmed highest number", "peerID", p.id, "oldConfirmedHighest", p.confirmedHigBn.Uint64(), "newConfirmedHighest", highestBn.Uint64())
+		log.Debug("Set confirmed highest number", "peerID", p.id, "oldConfirmedHighest", p.confirmedHigBn.Uint64(), "newConfirmedHighest", highestBn.Uint64())
 		p.confirmedHigBn.Set(highestBn)
 	}
 }
@@ -119,7 +119,7 @@ func (p *peer) SetLogicHighestBn(highestBn *big.Int) {
 	if highestBn != nil {
 		p.cLock.Lock()
 		defer p.cLock.Unlock()
-		p.Log().Debug("Set logic highest number", "peerID", p.id, "oldLogicHighest", p.logicHigBn.Uint64(), "newLogicHighest", highestBn.Uint64())
+		log.Debug("Set logic highest number", "peerID", p.id, "oldLogicHighest", p.logicHigBn.Uint64(), "newLogicHighest", highestBn.Uint64())
 		p.logicHigBn.Set(highestBn)
 	}
 }

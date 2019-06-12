@@ -42,6 +42,8 @@ type baseHandler struct {
 	cbft      *Cbft
 	peers     *peerSet
 	sendQueue chan *MsgPackage
+
+	quit chan struct{}
 }
 
 func NewHandler(cbft *Cbft) *baseHandler {
@@ -49,6 +51,7 @@ func NewHandler(cbft *Cbft) *baseHandler {
 		cbft:      cbft,
 		peers:     newPeerSet(),
 		sendQueue: make(chan *MsgPackage, sendQueueSize),
+		quit: make(chan struct{}, 0),
 	}
 }
 
@@ -59,6 +62,11 @@ func errResp(code errCode, format string, v ...interface{}) error {
 func (h *baseHandler) Start() {
 	go h.sendLoop()
 	go h.syncHighestStatus()
+}
+
+func (h *baseHandler) Close() {
+	h.quit <- struct{}{}
+	close(h.quit)
 }
 
 func (h *baseHandler) sendLoop() {
@@ -422,6 +430,9 @@ func (h *baseHandler) syncHighestStatus() {
 					h.Send(largerPeer.ID(), msg)
 				}
 			}
+		case <-h.quit:
+			log.Warn("Handler quit")
+			return
 		}
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/PlatONnetwork/PlatON-Go/p2p"
 	"github.com/PlatONnetwork/PlatON-Go/rlp"
 	"github.com/stretchr/testify/assert"
+	"math/big"
 	"os"
 	"testing"
 	"time"
@@ -47,6 +48,7 @@ func TestNewHandler(t *testing.T) {
 	handler.Start()
 	time.Sleep(1 * time.Second)
 	close(handler.sendQueue)
+	handler.Close()
 }
 
 func TestBaseHandler(t *testing.T) {
@@ -95,6 +97,8 @@ func TestHandlerMsg(t *testing.T) {
 		{GetHighestPrepareBlockMsg, &getHighestPrepareBlock{}, nil},
 		{HighestPrepareBlockMsg, &highestPrepareBlock{}, nil},
 		{PrepareBlockHashMsg, &prepareBlockHash{}, nil},
+		{GetHighestConfirmStatusMsg, &getHighestConfirmedStatus{}, nil},
+		{HighestConfirmedStatusMsg, &highestConfirmedStatus{}, nil},
 	}
 
 	for _, v := range testCases {
@@ -127,4 +131,23 @@ func (rw *fakeMessageRW) ReadMsg() (p2p.Msg, error) {
 
 func (rw *fakeMessageRW) WriteMsg(msg p2p.Msg) error {
 	return fmt.Errorf("fake error")
+}
+
+func TestSyncHighestStatus(t *testing.T) {
+	path := path()
+	defer os.RemoveAll(path)
+	engine, _, _ := randomCBFT(path, 1)
+
+	handler := NewHandler(engine)
+
+	p2pPeer := p2p.NewPeer(id, "pid", nil)
+	fake := &fakeMessageRW{}
+	cbftPeer := newPeer(p2pPeer, fake)
+	cbftPeer.SetLogicHighestBn(big.NewInt(2))
+	cbftPeer.SetLogicHighestBn(big.NewInt(2))
+	handler.PeerSet().Register(cbftPeer)
+	time.AfterFunc(6 * time.Second, func() {
+		handler.Close()
+	})
+	handler.syncHighestStatus()
 }
