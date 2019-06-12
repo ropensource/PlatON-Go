@@ -33,6 +33,11 @@ func TestNewHandler(t *testing.T) {
 	peer := newPeer(p2pPeer, fake)
 	ps.Register(peer)
 
+	p, _ := handler.GetPeer("pid")
+	assert.NotNil(t, p)
+	p, _ = handler.GetPeer("")
+	assert.Nil(t, p)
+
 	handler.Send(id, &prepareBlockHash{})
 	assert.Equal(t, 1, len(handler.sendQueue))
 
@@ -143,10 +148,10 @@ func TestSyncHighestStatus(t *testing.T) {
 	p2pPeer := p2p.NewPeer(id, "pid", nil)
 	fake := &fakeMessageRW{}
 	cbftPeer := newPeer(p2pPeer, fake)
-	cbftPeer.SetLogicHighestBn(big.NewInt(2))
+	cbftPeer.SetConfirmedHighestBn(big.NewInt(2))
 	cbftPeer.SetLogicHighestBn(big.NewInt(2))
 	handler.PeerSet().Register(cbftPeer)
-	time.AfterFunc(6 * time.Second, func() {
+	time.AfterFunc(10 * time.Second, func() {
 		handler.Close()
 	})
 	handler.syncHighestStatus()
