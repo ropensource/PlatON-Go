@@ -670,6 +670,8 @@ func (cbft *Cbft) OnGetHighestPrepareBlock(peerID discover.NodeID, msg *getHighe
 		if prepare, err := ext.PrepareBlock(); err == nil {
 			unconfirmedBlock = append(unconfirmedBlock, prepare)
 			votes = append(votes, &prepareVotes{Hash: ext.block.Hash(), Number: ext.number, Votes: ext.Votes()})
+		} else {
+			cbft.log.Error("Retrieve block fail", "err", err)
 		}
 	}
 	cbft.log.Debug("Send highestPrepareBlock")
