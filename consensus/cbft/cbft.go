@@ -837,6 +837,7 @@ func (cbft *Cbft) OnSeal(sealedBlock *types.Block, sealResultCh chan<- *types.Bl
 	cbft.bp.InternalBP().Seal(context.TODO(), current, cbft)
 	cbft.bp.InternalBP().NewHighestLogicalBlock(context.TODO(), current, cbft)
 	cbft.SetLocalHighestPrepareNum(current.number)
+	cbft.reset(sealedBlock)
 	if cbft.getValidators().Len() == 1 {
 		cbft.log.Debug("Seal complete", "hash", sealedBlock.Hash(), "number", sealedBlock.NumberU64())
 		cbft.log.Debug("Single node mode, confirm now")
@@ -862,7 +863,7 @@ func (cbft *Cbft) OnSeal(sealedBlock *types.Block, sealResultCh chan<- *types.Bl
 		case sealResultCh <- sealedBlock:
 			//reset pool when seal block
 			//start := time.Now()
-			cbft.reset(sealedBlock)
+			//cbft.reset(sealedBlock)
 			//cbft.bp.InternalBP().ResetTxPool(context.TODO(), current, time.Now().Sub(start), cbft)
 
 		default:
@@ -986,6 +987,8 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 		cbft.viewChangeVoteTimeoutCh <- resp
 	})
 	cbft.setViewChange(view)
+	// add to viewChangeVote When the viewChange is approved by self
+	cbft.viewChangeVotes[resp.ValidatorAddr] = resp
 	cbft.bp.InternalBP().SwitchView(bpCtx, view, cbft)
 	cbft.bp.ViewChangeBP().SendViewChangeVote(bpCtx, resp, cbft)
 	//cbft.handler.SendAllConsensusPeer(view)
@@ -1054,7 +1057,7 @@ func (cbft *Cbft) OnNewPrepareBlock(nodeId discover.NodeID, request *prepareBloc
 	}
 
 	ext := cbft.blockExtMap.findBlock(request.Block.Hash(), request.Block.NumberU64())
-	if cbft.blockChain.HasBlock(request.Block.Hash(), request.Block.NumberU64()) || (ext != nil && ext.block != nil) {
+	if (ext != nil && ext.block != nil) || cbft.blockChain.HasBlock(request.Block.Hash(), request.Block.NumberU64()) {
 		log.Warn("Block already in blockchain, discard this msg", "prepare block", request.String())
 		return nil
 	}
@@ -1833,6 +1836,7 @@ func (cbft *Cbft) storeBlocks(blocksToStore []*BlockExt) {
 			SyncState: ext.syncState,
 		}
 		cbft.log.Debug("Send consensus result to worker", "block", ext.String())
+		cbft.bp.InternalBP().StoreBlock(context.TODO(), ext, cbft)
 		cbft.eventMux.Post(cbftResult)
 	}
 }
@@ -2225,12 +2229,12 @@ func (cbft *Cbft) needBroadcast(nodeId discover.NodeID, msg Message) bool {
 			continue
 		}
 		if peer.knownMessageHash.Contains(msg.MsgHash()) {
-			cbft.log.Debug("needn't to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash(), "BHash", msg.BHash().TerminalString())
+			cbft.log.Debug("Needn't to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash(), "BHash", msg.BHash().TerminalString())
 			messageRepeatMeter.Mark(1)
 			return false
 		}
 	}
-	cbft.log.Debug("need to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash(), "BHash", msg.BHash().TerminalString())
+	cbft.log.Debug("Need to broadcast", "type", reflect.TypeOf(msg), "hash", msg.MsgHash(), "BHash", msg.BHash().TerminalString())
 	messageGossipMeter.Mark(1)
 	return true
 }
@@ -2239,4 +2243,8 @@ func (cbft *Cbft) AddJournal(msg *MsgInfo) {
 	cbft.log.Debug("Method:LoadPeerMsg received message from peer", "peer", msg.PeerID.TerminalString(), "msgType", reflect.TypeOf(msg.Msg), "msgHash", msg.Msg.MsgHash().TerminalString(), "BHash", msg.Msg.BHash().TerminalString())
 	//cbft.handleMsg(msg)
 	cbft.ReceivePeerMsg(msg)
+}
+
+func (cbft *Cbft) CommitBlockBP(block *types.Block, txs int, gasUsed uint64, elapse time.Duration) {
+	cbft.bp.PrepareBP().CommitBlock(context.TODO(), block, txs, gasUsed, elapse)
 }

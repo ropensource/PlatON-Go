@@ -163,9 +163,83 @@ func localNodeID() string {
 func (bp logPrepareBP) Close() {
 	jsonIt.close()
 }
+func (bp logPrepareBP) CommitBlock(ctx context.Context, block *types.Block, txs int, gasUsed uint64, elapse time.Duration) {
+	type CommitBlock struct {
+		Block   *types.Block `json:"block"`
+		txs     int          `json:"txs"`
+		gasUsed uint64       `json:"gas_used"`
+	}
+	processor := localAddress(nil)
+	span := &Span{
+		Context: Context{
+			TraceID:   block.Time().Uint64(),
+			SpanID:    block.Number().String(),
+			ParentID:  localNodeID(),
+			Creator:   processor,
+			Processor: processor,
+		},
+		StartTime:     time.Now(),
+		DurationTime:  elapse,
+		OperationName: "commit_block",
+		Tags: []Tag{
+			{
+				Key:   "peer_id",
+				Value: localNodeID(),
+			},
+			{
+				Key:   "action",
+				Value: "commit_block",
+			},
+		},
+		LogRecords: []LogRecord{
+			{
+				Timestamp: time.Now().UnixNano(),
+				Log: &CommitBlock{
+					Block:   block,
+					txs:     txs,
+					gasUsed: gasUsed,
+				},
+			},
+		},
+	}
+	jsonIt.Marshal(span)
+}
+
+func (bp logPrepareBP) SendBlock(ctx context.Context, block *prepareBlock, cbft *Cbft) {
+	processor := localAddress(cbft)
+	span := &Span{
+		Context: Context{
+			TraceID:   block.Timestamp,
+			SpanID:    block.Block.Number().String(),
+			ParentID:  cbft.config.NodeID.String(),
+			Creator:   processor,
+			Processor: processor,
+		},
+		StartTime:     time.Now(),
+		OperationName: "prepare_block",
+		Tags: []Tag{
+			{
+				Key:   "peer_id",
+				Value: cbft.config.NodeID.String(),
+			},
+			{
+				Key:   "action",
+				Value: "send_block",
+			},
+		},
+		LogRecords: []LogRecord{
+			{
+				Timestamp: time.Now().UnixNano(),
+				Log:       block,
+			},
+		},
+	}
+	jsonIt.Marshal(span)
+
+}
+
 func (bp logPrepareBP) ReceiveBlock(ctx context.Context, block *prepareBlock, cbft *Cbft) {
 	processor := localAddress(cbft)
-
 	span := &Span{
 		Context: Context{
 			TraceID:   block.Timestamp,
@@ -1180,6 +1254,35 @@ func (bp logInternalBP) Seal(ctx context.Context, ext *BlockExt, cbft *Cbft) {
 			{
 				Key:   "action",
 				Value: "seal_block",
+			},
+		},
+		LogRecords: []LogRecord{
+			{
+				Timestamp: time.Now().UnixNano(),
+				Log:       ext,
+			},
+		},
+	}
+	jsonIt.Marshal(span)
+
+}
+
+func (bp logInternalBP) StoreBlock(ctx context.Context, ext *BlockExt, cbft *Cbft) {
+	processor := localAddress(cbft)
+	span := &Span{
+		Context: Context{
+			TraceID:   ext.timestamp,
+			SpanID:    ext.block.Number().String(),
+			ParentID:  cbft.config.NodeID.String(),
+			Creator:   processor,
+			Processor: processor,
+		},
+		StartTime:     time.Now(),
+		OperationName: "seal_block",
+		Tags: []Tag{
+			{
+				Key:   "action",
+				Value: "store_block",
 			},
 		},
 		LogRecords: []LogRecord{
