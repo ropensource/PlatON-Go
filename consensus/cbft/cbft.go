@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	"github.com/PlatONnetwork/PlatON-Go/eth/downloader"
 	"github.com/PlatONnetwork/PlatON-Go/event"
 	"github.com/PlatONnetwork/PlatON-Go/node"
@@ -261,8 +260,13 @@ func (cbft *Cbft) SetBlockChainCache(blockChainCache *core.BlockChainCache) {
 	cbft.blockChainCache = blockChainCache
 }
 
-func (cbft *Cbft) SetBreakpoint(t string) {
-	cbft.bp = getBreakpoint(t)
+func (cbft *Cbft) SetBreakpoint(t string, log string) error {
+	if bp, err := getBreakpoint(t, log); err != nil {
+		return err
+	} else {
+		cbft.bp = bp
+	}
+	return nil
 }
 
 // Start sets blockChain and txPool into cbft
@@ -1663,6 +1667,7 @@ func (cbft *Cbft) Close() error {
 	if cbft.wal != nil {
 		cbft.wal.Close()
 	}
+	cbft.bp.Close()
 	return nil
 }
 

@@ -27,6 +27,9 @@ func init() {
 type elkPrepareBP struct {
 }
 
+func (bp elkPrepareBP) Close() {
+
+}
 func (bp elkPrepareBP) ReceiveBlock(ctx context.Context, block *prepareBlock, cbft *Cbft) {
 	peerId := ctx.Value("peer")
 	log.Info("Reporting-ReceiveBlock", "from", peerId,
