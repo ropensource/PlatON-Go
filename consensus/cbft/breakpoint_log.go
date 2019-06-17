@@ -272,15 +272,15 @@ func (bp logPrepareBP) ReceiveBlock(ctx context.Context, block *prepareBlock, cb
 }
 
 func (bp logPrepareBP) ReceiveVote(ctx context.Context, vote *prepareVote, cbft *Cbft) {
-	tags := []Tag{
-		{Key: "action", Value: "receive_prepare_vote"},
-	}
-	span, err := makeSpan(ctx, cbft, vote, tags)
-	if err != nil {
-		log.Error("ReceiveVote make span fail", "err", err)
-		return
-	}
-	jsonIt.Marshal(span)
+	//tags := []Tag{
+	//	{Key: "action", Value: "receive_prepare_vote"},
+	//}
+	//span, err := makeSpan(ctx, cbft, vote, tags)
+	//if err != nil {
+	//	log.Error("ReceiveVote make span fail", "err", err)
+	//	return
+	//}
+	//jsonIt.Marshal(span)
 
 }
 
@@ -604,6 +604,42 @@ func (bp logViewChangeBP) ReceiveViewChange(ctx context.Context, view *viewChang
 }
 
 func (bp logViewChangeBP) ReceiveViewChangeVote(ctx context.Context, vote *viewChangeVote, cbft *Cbft) {
+	//span := &Span{
+	//	Context: Context{
+	//		TraceID:   vote.Timestamp,
+	//		SpanID:    fmt.Sprintf("%d", vote.BlockNum),
+	//		ParentID:  cbft.config.NodeID.String(),
+	//		Flags:     flagState,
+	//		Creator:   vote.ValidatorAddr.String(),
+	//		Processor: localAddress(cbft),
+	//	},
+	//	StartTime: time.Now(),
+	//	Tags: []Tag{
+	//		{
+	//			Key:   "peer_id",
+	//			Value: ctx.Value("peer"),
+	//		},
+	//		{
+	//			Key:   "action",
+	//			Value: "receive_view_change_vote",
+	//		},
+	//	},
+	//	LogRecords: []LogRecord{
+	//		{
+	//			Timestamp: time.Now().UnixNano(),
+	//			Log:       vote,
+	//		},
+	//		{
+	//			Timestamp: time.Now().UnixNano(),
+	//			Log:       cbft.viewChange,
+	//		},
+	//	},
+	//	OperationName: "view_change_vote",
+	//}
+	//jsonIt.Marshal(span)
+}
+
+func (bp logViewChangeBP) AcceptViewChangeVote(ctx context.Context, vote *viewChangeVote, cbft *Cbft) {
 	span := &Span{
 		Context: Context{
 			TraceID:   vote.Timestamp,
@@ -621,7 +657,7 @@ func (bp logViewChangeBP) ReceiveViewChangeVote(ctx context.Context, vote *viewC
 			},
 			{
 				Key:   "action",
-				Value: "receive_view_change_vote",
+				Value: "accept_view_change_vote",
 			},
 		},
 		LogRecords: []LogRecord{

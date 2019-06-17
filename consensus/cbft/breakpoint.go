@@ -44,6 +44,7 @@ type ViewChangeBP interface {
 	SendViewChange(ctx context.Context, view *viewChange, cbft *Cbft)
 	ReceiveViewChange(ctx context.Context, view *viewChange, cbft *Cbft)
 	ReceiveViewChangeVote(ctx context.Context, view *viewChangeVote, cbft *Cbft)
+	AcceptViewChangeVote(ctx context.Context, view *viewChangeVote, cbft *Cbft)
 	InvalidViewChange(ctx context.Context, view *viewChange, err error, cbft *Cbft)
 	InvalidViewChangeVote(ctx context.Context, view *viewChangeVote, err error, cbft *Cbft)
 	InvalidViewChangeBlock(ctx context.Context, view *viewChange, cbft *Cbft)
@@ -195,6 +196,10 @@ func (bp defaultViewChangeBP) ReceiveViewChange(ctx context.Context, view *viewC
 }
 
 func (bp defaultViewChangeBP) ReceiveViewChangeVote(ctx context.Context, view *viewChangeVote, cbft *Cbft) {
+
+}
+
+func (bp defaultViewChangeBP) AcceptViewChangeVote(ctx context.Context, view *viewChangeVote, cbft *Cbft) {
 
 }
 

@@ -633,6 +633,9 @@ func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote)
 	hadAgree := cbft.agreeViewChange()
 	if cbft.viewChange != nil && vote.EqualViewChange(cbft.viewChange) {
 		if err := cbft.verifyValidatorSign(cbft.nextRoundValidator(cbft.viewChange.BaseBlockNum), vote.ValidatorIndex, vote.ValidatorAddr, vote, vote.Signature[:]); err == nil {
+			if v := cbft.viewChangeVotes[vote.ValidatorAddr]; v == nil {
+				cbft.bp.ViewChangeBP().AcceptViewChangeVote(bpCtx, vote, cbft)
+			}
 			cbft.viewChangeVotes[vote.ValidatorAddr] = vote
 			log.Info("Agree receive view change response", "peer", peerID, "viewChangeVotes", len(cbft.viewChangeVotes))
 		} else {

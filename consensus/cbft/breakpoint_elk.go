@@ -166,6 +166,14 @@ func (bp elkViewChangeBP) ReceiveViewChangeVote(ctx context.Context, vote *viewC
 		"number", vote.BlockNum)
 	//log.Debug("ReceiveViewChangeVote", "vote", vote.String(), "state", state.String())
 }
+func (bp elkViewChangeBP) AcceptViewChangeVote(ctx context.Context, view *viewChangeVote, cbft *Cbft) {
+	peerId := ctx.Value("peer")
+	log.Debug("Reporting-InvalidViewChange", "from", peerId,
+		"mark", "invalidViewChange",
+		"msgHash", view.MsgHash(),
+		"hash", view.BlockHash,
+		"number", view.BlockNum)
+}
 
 func (bp elkViewChangeBP) InvalidViewChange(ctx context.Context, view *viewChange, err error, cbft *Cbft) {
 	peerId := ctx.Value("peer")
