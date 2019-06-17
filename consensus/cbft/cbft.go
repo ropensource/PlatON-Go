@@ -601,7 +601,7 @@ func (cbft *Cbft) OnGetPrepareBlock(peerID discover.NodeID, g *getPrepareBlock) 
 		pb, err := ext.PrepareBlock()
 		if err == nil {
 			cbft.handler.Send(peerID, pb)
-			cbft.log.Debug("Send Block", "peer", peerID, "hash", g.Hash, "number", g.Number)
+			cbft.log.Debug("Send Block", "peer", peerID, "hash", g.Hash, "number", g.Number, "msgHash", pb.MsgHash().TerminalString())
 		}
 	}
 	return nil
@@ -1010,9 +1010,7 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 
 	if view != nil {
 		// priority forwarding
-		if cbft.needBroadcast(peerID, view) {
-			cbft.handler.SendAllConsensusPeer(view)
-		}
+		cbft.handler.SendAllConsensusPeer(view)
 	}
 	if cbft.viewChange != nil && cbft.viewChange.Equal(view) {
 		cbft.log.Debug("Duplication view change message, discard this")
@@ -2325,7 +2323,7 @@ func (cbft *Cbft) isForwarded(nodeId discover.NodeID, msg Message) bool {
 	peers := cbft.handler.PeerSet().Peers()
 	// message of prepareBlock cannot be filtered
 	for _, peer := range peers {
-		if peer.id == nodeId.TerminalString() {
+		if peer.id == fmt.Sprintf("%x", nodeId.Bytes()[:8]) {
 			continue
 		}
 		if peer.knownMessageHash.Contains(msg.MsgHash()) {
