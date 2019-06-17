@@ -362,8 +362,9 @@ func (cbft *Cbft) viewChanging() bool {
 
 func (cbft *Cbft) AcceptPrepareBlock(request *prepareBlock) AcceptStatus {
 	if cbft.viewChange == nil {
-		cbft.log.Debug("Cache block, viewchange is empty")
-		return Cache
+		//todo need check prepareblock is belong to last accepted viewchange
+		cbft.log.Debug("Accept block, viewchange is empty")
+		return Accept
 	}
 
 	if cbft.viewChange.Timestamp > request.Timestamp && cbft.viewChange.BaseBlockNum < request.Block.NumberU64() {
@@ -398,6 +399,7 @@ func (cbft *Cbft) AcceptPrepareBlock(request *prepareBlock) AcceptStatus {
 
 func (cbft *Cbft) AcceptPrepareVote(vote *prepareVote) AcceptStatus {
 	if vote.Number < cbft.getHighestConfirmed().number {
+		cbft.log.Debug("Discard prepare vote, vote's number lower than local confirmed")
 		return Discard
 	}
 	if (cbft.lastViewChange != nil && vote.Number < cbft.lastViewChange.BaseBlockNum) ||
@@ -406,8 +408,8 @@ func (cbft *Cbft) AcceptPrepareVote(vote *prepareVote) AcceptStatus {
 	}
 	//1. not in viewchanging
 	if cbft.viewChanging() && !cbft.agreeViewChange() {
-		// changing
-		if vote.Number <= cbft.viewChange.BaseBlockNum {
+		// changing, if vote's timestamp equal viewchanging's timestamp, local is too slower than other,need to accept vote
+		if vote.Number <= cbft.viewChange.BaseBlockNum || vote.Timestamp == cbft.viewChange.Timestamp {
 			log.Debug("Accept vote", "hash", vote.Hash, "number", vote.Number, "irr num", cbft.viewChange.BaseBlockNum)
 			return Accept
 		}
@@ -630,6 +632,9 @@ func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote)
 	hadAgree := cbft.agreeViewChange()
 	if cbft.viewChange != nil && vote.EqualViewChange(cbft.viewChange) {
 		if err := cbft.verifyValidatorSign(cbft.nextRoundValidator(cbft.viewChange.BaseBlockNum), vote.ValidatorIndex, vote.ValidatorAddr, vote, vote.Signature[:]); err == nil {
+			if v := cbft.viewChangeVotes[vote.ValidatorAddr]; v == nil {
+				cbft.bp.ViewChangeBP().AcceptViewChangeVote(bpCtx, vote, cbft)
+			}
 			cbft.viewChangeVotes[vote.ValidatorAddr] = vote
 			log.Info("Agree receive view change response", "peer", peerID, "viewChangeVotes", len(cbft.viewChangeVotes))
 		} else {
@@ -723,6 +728,8 @@ func (cbft *Cbft) broadcastBlock(ext *BlockExt) {
 		return
 	} else {
 		log.Debug("Send block", "nodeID", cbft.config.NodeID, "number", ext.block.Number(), "hash", ext.block.Hash())
+		cbft.bp.PrepareBP().SendBlock(context.TODO(), p, cbft)
+
 		cbft.handler.SendAllConsensusPeer(p)
 	}
 }
@@ -854,6 +861,10 @@ func (b BlockExt) MarshalJSON() ([]byte, error) {
 		RcvTime:         b.rcvTime,
 		ViewChangeVotes: len(b.viewChangeVotes),
 		PrepareVotes:    b.prepareVotes.Len(),
+	}
+	if b.block != nil {
+		ext.Hash = b.block.Hash()
+		ext.Parent = b.block.ParentHash()
 	}
 
 	return json.Marshal(&ext)

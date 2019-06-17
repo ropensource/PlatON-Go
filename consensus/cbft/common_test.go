@@ -12,13 +12,16 @@ import (
 	"github.com/PlatONnetwork/PlatON-Go/crypto"
 	"github.com/PlatONnetwork/PlatON-Go/ethdb"
 	"github.com/PlatONnetwork/PlatON-Go/event"
+	"github.com/PlatONnetwork/PlatON-Go/log"
 	"github.com/PlatONnetwork/PlatON-Go/node"
 	"github.com/PlatONnetwork/PlatON-Go/p2p"
 	"github.com/PlatONnetwork/PlatON-Go/p2p/discover"
 	"github.com/PlatONnetwork/PlatON-Go/params"
 	"github.com/PlatONnetwork/PlatON-Go/rlp"
 	"github.com/deckarep/golang-set"
+	"github.com/stretchr/testify/assert"
 	"math/big"
+	"testing"
 	"time"
 )
 
@@ -469,4 +472,17 @@ func forgeViewChangeVote(view *viewChange) *viewChangeVote {
 	sign, _ := crypto.Sign(buf, pri)
 	resp.Signature.SetBytes(sign)
 	return resp
+}
+
+func TestCbft_Genesis(t *testing.T) {
+	block := core.DefaultGenesisBlock().ToBlock(nil)
+	gen := core.DefaultGenesisBlock()
+	block2 := gen.ToBlock(nil)
+	assert.Equal(t, block.Hash(), block2.Hash())
+
+	gen.Config.Cbft.InitialNodes = gen.Config.Cbft.InitialNodes[:0]
+	block3 := gen.ToBlock(nil)
+	assert.NotEqual(t, block.Hash(), block3.Hash())
+
+	log.Debug("sfsd", "s", randomID())
 }

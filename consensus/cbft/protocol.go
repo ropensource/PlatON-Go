@@ -296,7 +296,9 @@ func (v *viewChange) BHash() common.Hash {
 func (v *viewChange) Equal(view *viewChange) bool {
 	return v.Timestamp == view.Timestamp &&
 		v.BaseBlockNum == view.BaseBlockNum &&
-		v.BaseBlockHash == view.BaseBlockHash
+		v.BaseBlockHash == view.BaseBlockHash &&
+		v.ProposalIndex == view.ProposalIndex &&
+		v.ProposalAddr == view.ProposalAddr
 }
 
 func (v *viewChange) CopyWithoutVotes() *viewChange {
