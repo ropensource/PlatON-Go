@@ -3,6 +3,7 @@ package cbft
 import (
 	"bytes"
 	"fmt"
+	"github.com/PlatONnetwork/PlatON-Go/common"
 	"github.com/PlatONnetwork/PlatON-Go/log"
 	"github.com/PlatONnetwork/PlatON-Go/p2p"
 	"math"
@@ -36,6 +37,15 @@ func (r *router) gossip(m *MsgPackage) {
 	// todo: need to check
 	msgType := MessageType(m.msg)
 	msgHash := m.msg.MsgHash()
+
+	switch msgType {
+	case ConfirmedPrepareBlockMsg, PrepareBlockHashMsg:
+		// check the message is repeated
+		if r.repeatedCheck(m.peerID, msgHash) {
+			log.Debug("The message is repeated, not to forward again","msgType", reflect.TypeOf(m.msg), "msgHash", msgHash.TerminalString())
+			return
+		}
+	}
 	peers, err := r.selectNodesByMsgType(msgType, msgHash)
 	if err != nil {
 		log.Error("select nodes fail in the gossip method. gossip fail", "msgType", msgType)
@@ -54,7 +64,7 @@ func (r *router) gossip(m *MsgPackage) {
 		if err := p2p.Send(peer.rw, msgType, m.msg); err != nil {
 			log.Error("Send message failed", "peer", peer.id, "err", err)
 		} else {
-			peer.knownMessageHash.Add(msgHash)
+			peer.MarkMessageHash(msgHash)
 		}
 	}
 }
@@ -175,4 +185,17 @@ OUTER:
 		kNodes = append(kNodes, node)
 	}
 	return kNodes
+}
+
+func (r *router) repeatedCheck(peerId string, msgHash common.Hash) bool {
+	peers := r.cbft.handler.PeerSet().Peers()
+	for _, peer := range peers {
+		if peer.id == peerId {
+			continue
+		}
+		if peer.knownMessageHash.Contains(msgHash) {
+			return true
+		}
+	}
+	return false
 }

@@ -604,8 +604,7 @@ func (cbft *Cbft) VerifyAndViewChange(view *viewChange) error {
 }
 
 func (cbft *Cbft) setViewChange(view *viewChange) {
-	log.Info("Make viewchange vote", "vote", view.String())
-
+	log.Info("Setting new viewChange", "view", view.String())
 	cbft.resetViewChange()
 	cbft.viewChange = view
 	cbft.master = false
@@ -620,7 +619,7 @@ func (cbft *Cbft) nextRoundValidator(blockNumber uint64) uint64 {
 }
 
 func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote) error {
-	log.Debug("Receive view change vote", "peer", peerID, "vote", vote.String(), "view", cbft.viewChange.String())
+	log.Debug("Receive view change vote", "peer", peerID, "vote", vote.String(), "view", cbft.viewChange.String(), "msgHash", vote.MsgHash())
 	bpCtx := context.WithValue(context.Background(), "peer", peerID)
 	cbft.bp.ViewChangeBP().ReceiveViewChangeVote(bpCtx, vote, cbft)
 	if cbft.needBroadcast(peerID, vote) {

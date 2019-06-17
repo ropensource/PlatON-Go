@@ -222,7 +222,7 @@ func (cbft *Cbft) getValidators() *Validators {
 func (cbft *Cbft) ReceivePeerMsg(msg *MsgInfo) {
 	select {
 	case cbft.peerMsgCh <- msg:
-		cbft.log.Debug("Received message from peer", "peer", msg.PeerID.TerminalString(), "msgType", reflect.TypeOf(msg.Msg), "msgHash", msg.Msg.MsgHash().TerminalString(), "BHash", msg.Msg.BHash().TerminalString())
+		cbft.log.Debug("Received message and put to the peerMsgCh", "peer", msg.PeerID.TerminalString(), "msgType", reflect.TypeOf(msg.Msg), "msgHash", msg.Msg.MsgHash().TerminalString(), "BHash", msg.Msg.BHash().TerminalString())
 	case <-cbft.exitCh:
 		cbft.log.Error("Cbft exit")
 	}
@@ -411,7 +411,6 @@ func (cbft *Cbft) handleMsg(info *MsgInfo) {
 			return
 		}
 	}
-
 	switch msg := msg.(type) {
 	case *prepareBlock:
 		err = cbft.OnNewPrepareBlock(peerID, msg, true)
@@ -1007,11 +1006,13 @@ func (cbft *Cbft) OnSendViewChange() {
 // Receive view from other nodes
 // Need verify timestamp , signature, promise highest confirmed block
 func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
-	cbft.log.Debug("Receive view change", "peer", peerID, "nodeID", cbft.getValidators().NodeID(int(view.ProposalIndex)), "view", view.String())
+	cbft.log.Debug("Receive view change", "peer", peerID, "nodeID", cbft.getValidators().NodeID(int(view.ProposalIndex)), "view", view.String(), "msgHash", view.MsgHash().TerminalString())
 
 	if view != nil {
 		// priority forwarding
-		cbft.handler.SendAllConsensusPeer(view)
+		if cbft.needBroadcast(peerID, view) {
+			cbft.handler.SendAllConsensusPeer(view)
+		}
 	}
 	if cbft.viewChange != nil && cbft.viewChange.Equal(view) {
 		cbft.log.Debug("Duplication view change message, discard this")
@@ -1060,7 +1061,7 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 
 	resp.Signature.SetBytes(sign)
 	cbft.viewChangeResp = resp
-	cbft.log.Info("Response viewChangeVote", "msgHash", resp.MsgHash())
+	cbft.log.Info("Response viewChangeVote", "viewChangeResp", resp, "msgHash", resp.MsgHash())
 	time.AfterFunc(time.Duration(cbft.config.Period)*time.Second, func() {
 		cbft.viewChangeVoteTimeoutCh <- resp
 	})
@@ -1117,6 +1118,7 @@ func (cbft *Cbft) flushReadyBlock() bool {
 // Receive prepare block from the other consensus node.
 // Need check something ,such as validator index, address, view is equal local view , and last verify signature
 func (cbft *Cbft) OnNewPrepareBlock(nodeId discover.NodeID, request *prepareBlock, propagation bool) error {
+	cbft.log.Info("Received a PrepareBlockMsg", "FromPeerId", nodeId.TerminalString(), "prepare", request.String(), "msgHash", request.MsgHash())
 	bpCtx := context.WithValue(context.TODO(), "peer", nodeId)
 	cbft.bp.PrepareBP().ReceiveBlock(bpCtx, request, cbft)
 
@@ -2317,4 +2319,18 @@ func (cbft *Cbft) AddJournal(msg *MsgInfo) {
 	cbft.log.Debug("Method:LoadPeerMsg received message from peer", "peer", msg.PeerID.TerminalString(), "msgType", reflect.TypeOf(msg.Msg), "msgHash", msg.Msg.MsgHash().TerminalString(), "BHash", msg.Msg.BHash().TerminalString())
 	//cbft.handleMsg(msg)
 	cbft.ReceivePeerMsg(msg)
+}
+
+func (cbft *Cbft) isForwarded(nodeId discover.NodeID, msg Message) bool {
+	peers := cbft.handler.PeerSet().Peers()
+	// message of prepareBlock cannot be filtered
+	for _, peer := range peers {
+		if peer.id == nodeId.TerminalString() {
+			continue
+		}
+		if peer.knownMessageHash.Contains(msg.MsgHash()) {
+			return true
+		}
+	}
+	return false
 }

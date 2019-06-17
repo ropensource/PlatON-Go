@@ -3,14 +3,13 @@ package cbft
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/PlatONnetwork/PlatON-Go/common"
+	"github.com/PlatONnetwork/PlatON-Go/core/types"
 	"github.com/PlatONnetwork/PlatON-Go/crypto"
+	"github.com/PlatONnetwork/PlatON-Go/p2p/discover"
 	"github.com/PlatONnetwork/PlatON-Go/rlp"
 	"math/big"
 	"reflect"
-
-	"github.com/PlatONnetwork/PlatON-Go/common"
-	"github.com/PlatONnetwork/PlatON-Go/core/types"
-	"github.com/PlatONnetwork/PlatON-Go/p2p/discover"
 )
 
 const CbftProtocolMaxMsgSize = 10 * 1024 * 1024
@@ -139,10 +138,11 @@ func (pb *prepareBlock) MsgHash() common.Hash {
 	if pb == nil {
 		return common.Hash{}
 	}
-	bytes := make([]byte, 0)
-	bytes = append(bytes, pb.Block.Hash().Bytes()...)
-	bytes = append(bytes, pb.ProposalAddr.Bytes()...)
-	bytes = append(bytes, uint64ToBytes(pb.Timestamp)...)
+	//bytes := make([]byte, 0)
+	//bytes = append(bytes, pb.Block.Hash().Bytes()...)
+	//bytes = append(bytes, pb.ProposalAddr.Bytes()...)
+	//bytes = append(bytes, uint64ToBytes(pb.Timestamp)...)
+	bytes := combineBytes(pb.Block.Hash().Bytes(), pb.ProposalAddr.Bytes(), uint64ToBytes(pb.Timestamp))
 	return produceHash(PrepareBlockMsg, bytes)
 }
 
@@ -220,10 +220,11 @@ func (pv *prepareVote) MsgHash() common.Hash {
 	if pv == nil {
 		return common.Hash{}
 	}
-	bytes := make([]byte, 0)
+	/*bytes := make([]byte, 0)
 	bytes = append(bytes, pv.Hash.Bytes()...)
 	bytes = append(bytes, pv.ValidatorAddr.Bytes()...)
-	bytes = append(bytes, uint64ToBytes(pv.Timestamp)...)
+	bytes = append(bytes, uint64ToBytes(pv.Timestamp)...)*/
+	bytes := combineBytes(pv.Hash.Bytes(), pv.ValidatorAddr.Bytes(), uint64ToBytes(pv.Timestamp))
 	return produceHash(PrepareVoteMsg, bytes)
 }
 
@@ -277,10 +278,11 @@ func (v *viewChange) MsgHash() common.Hash {
 	if v == nil {
 		return common.Hash{}
 	}
-	bytes := make([]byte, 0)
+	/*bytes := make([]byte, 0)
 	bytes = append(bytes, v.Signature.Bytes()...)
 	bytes = append(bytes, v.ProposalAddr.Bytes()...)
-	bytes = append(bytes, uint64ToBytes(v.Timestamp)...)
+	bytes = append(bytes, uint64ToBytes(v.Timestamp)...)*/
+	bytes := combineBytes(v.Signature.Bytes(), v.ProposalAddr.Bytes(), uint64ToBytes(v.Timestamp))
 	return produceHash(ViewChangeMsg, bytes)
 }
 
@@ -369,11 +371,11 @@ func (v *viewChangeVote) MsgHash() common.Hash {
 	if v == nil {
 		return common.Hash{}
 	}
-	bytes := make([]byte, 0)
+	/*bytes := make([]byte, 0)
 	bytes = append(bytes, v.Signature.Bytes()...)
 	bytes = append(bytes, v.ValidatorAddr.Bytes()[:5]...)
-	bytes = append(bytes, uint64ToBytes(v.Timestamp)...)
-
+	bytes = append(bytes, uint64ToBytes(v.Timestamp)...)*/
+	bytes := combineBytes(v.Signature.Bytes(), v.ValidatorAddr.Bytes(), uint64ToBytes(v.Timestamp))
 	return produceHash(ViewChangeVoteMsg, bytes)
 }
 
@@ -640,9 +642,10 @@ func (s *getHighestConfirmedStatus) MsgHash() common.Hash {
 	if s == nil {
 		return common.Hash{}
 	}
-	byt := make([]byte, 0)
-	byt = append(byt, uint64ToBytes(s.Highest)...)
-	byt = append(byt, uint64ToBytes(s.Type)...)
+	//byt := make([]byte, 0)
+	//byt = append(byt, uint64ToBytes(s.Highest)...)
+	//byt = append(byt, uint64ToBytes(s.Type)...)
+	byt := combineBytes(uint64ToBytes(s.Highest), uint64ToBytes(s.Type))
 	return produceHash(GetHighestConfirmStatusMsg, byt)
 }
 
@@ -666,9 +669,10 @@ func (s *highestConfirmedStatus) MsgHash() common.Hash {
 	if s == nil {
 		return common.Hash{}
 	}
-	byt := make([]byte, 0)
+	/*byt := make([]byte, 0)
 	byt = append(byt, uint64ToBytes(s.Highest)...)
-	byt = append(byt, uint64ToBytes(s.Type)...)
+	byt = append(byt, uint64ToBytes(s.Type)...)*/
+	byt := combineBytes(uint64ToBytes(s.Highest), uint64ToBytes(s.Type))
 	return produceHash(HighestConfirmedStatusMsg, byt)
 }
 

@@ -1,8 +1,10 @@
 package cbft
 
 import (
+	"bytes"
 	"github.com/PlatONnetwork/PlatON-Go/common"
 	"github.com/PlatONnetwork/PlatON-Go/crypto/sha3"
+	"io"
 	"math/rand"
 )
 
@@ -20,6 +22,24 @@ func produceHash(msgType byte, bytes []byte) common.Hash {
 	result := common.Hash{}
 	result.SetBytes(hashBytes[:])
 	return result
+}
+
+func combineBytes(bts ...[]byte) []byte {
+	buffer := bytes.NewBuffer(make([]byte, 0, 128))
+	for _, v := range bts {
+		io.Copy(buffer, bytes.NewReader(v))
+	}
+	temp := buffer.Bytes()
+	length := len(temp)
+	var response []byte
+	//are we wasting more than 10% space?
+	if cap(temp) > (length + length / 10) {
+		response = make([]byte, length)
+		copy(response, temp)
+	} else {
+		response = temp
+	}
+	return response
 }
 
 func uint64ToBytes(n uint64) []byte {

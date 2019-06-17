@@ -20,7 +20,7 @@ var (
 )
 
 const (
-	maxKnownMessageHash = 60000
+	maxKnownMessageHash = 20000
 
 	handshakeTimeout = 5 * time.Second
 )
@@ -236,7 +236,7 @@ func (ps *peerSet) ConfirmedHighestBnPeers(highest *big.Int) []*peer {
 	defer ps.lock.RUnlock()
 	list := make([]*peer, 0, len(ps.peers))
 	for _, p := range ps.peers {
-		log.Debug("ConfirmedHighestBnPeers", "pHighest", p.ConfirmedHighestBn().Uint64(), "highest", highest.Uint64(), "peer", p.id)
+		//log.Debug("ConfirmedHighestBnPeers", "pHighest", p.ConfirmedHighestBn().Uint64(), "highest", highest.Uint64(), "peer", p.id)
 		if p.ConfirmedHighestBn().Cmp(highest) > 0 {
 			list = append(list, p)
 		}
@@ -250,7 +250,7 @@ func (ps *peerSet) LogicHighestBnPeers(highest *big.Int) []*peer {
 	defer ps.lock.RUnlock()
 	list := make([]*peer, 0, len(ps.peers))
 	for _, p := range ps.peers {
-		log.Debug("LogicHighestBnPeers", "pHighest", p.LogicHighestBn().Uint64(), "highest", highest.Uint64(), "peer", p.id)
+		//log.Debug("LogicHighestBnPeers", "pHighest", p.LogicHighestBn().Uint64(), "highest", highest.Uint64(), "peer", p.id)
 		if p.LogicHighestBn().Cmp(highest) > 0 {
 			list = append(list, p)
 		}
