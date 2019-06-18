@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	maxReceiveRecords = 2000
-	maxSendRecords    = 2000
+	maxReceiveRecords = 200
+	maxSendRecords    = 200
 )
 
 type receiveRecord struct {
@@ -175,7 +175,7 @@ func (t *tracing) String() string {
 }
 
 func (t *tracing) start() {
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(time.Second * 2)
 	for {
 		select {
 		case <-ticker.C:

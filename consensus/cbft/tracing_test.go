@@ -65,13 +65,9 @@ func TestNewTracing(t *testing.T) {
 	t.Log(trac)
 }
 
-func TestTimeHeap(t *testing.T) {
-	var heap receiveTimeHeap
-	receive01 := &receiveRecord{ Time: time.Now(), SelfId: "02", Order: time.Now().Unix(), MsgHash: common.BytesToHash([]byte("02")).TerminalString(),}
-	time.Sleep(1*time.Second)
-	receive02 := &receiveRecord{ Time: time.Now(), SelfId: "01", Order: time.Now().Unix() - 100000000, MsgHash: common.BytesToHash([]byte("01")).TerminalString(),}
-	heap.Push(receive01)
-	heap.Push(receive02)
-	t.Log(heap)
-
+func TestStart(t *testing.T) {
+	tracing := NewTracing()
+	tracing.On()
+	time.Sleep(time.Second * 2)
+	tracing.Off()
 }
