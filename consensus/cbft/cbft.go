@@ -145,6 +145,7 @@ type Cbft struct {
 	startTimeOfEpoch int64
 
 	evPool *EvidencePool
+	tracing *tracing
 }
 
 // New creates a concurrent BFT consensus engine
@@ -184,6 +185,7 @@ func New(config *params.CbftConfig, eventMux *event.TypeMux, ctx *node.ServiceCo
 	cbft.router = NewRouter(cbft, cbft.handler)
 	cbft.queues = make(map[string]int)
 	cbft.resetCache, _ = lru.New(maxResetCacheSize)
+	cbft.tracing = NewTracing()
 	return cbft
 }
 
@@ -403,6 +405,12 @@ func (cbft *Cbft) receiveLoop() {
 func (cbft *Cbft) handleMsg(info *MsgInfo) {
 	msg, peerID := info.Msg, info.PeerID
 	var err error
+
+	// record the message for received
+	cbft.tracing.RecordReceive(cbft.config.NodeID.TerminalString(),
+		info.PeerID.TerminalString(),
+		info.Msg.MsgHash().TerminalString(),
+		fmt.Sprintf("%T", info.Msg))
 
 	if !cbft.isRunning() {
 		switch msg.(type) {
@@ -2347,3 +2355,10 @@ func (cbft *Cbft) CommitBlockBP(block *types.Block, txs int, gasUsed uint64, ela
 	cbft.bp.PrepareBP().CommitBlock(context.TODO(), block, txs, gasUsed, elapse)
 }
 
+func (cbft *Cbft) TracingSwitch(flag int8) {
+	if flag == 1 {
+		cbft.tracing.On()
+	} else {
+		cbft.tracing.Off()
+	}
+}

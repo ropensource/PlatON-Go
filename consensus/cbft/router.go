@@ -58,8 +58,10 @@ func (r *router) gossip(m *MsgPackage) {
 		transfer := peers[:int(math.Sqrt(float64(len(peers))))]
 		peers = transfer
 	}
-	log.Debug("Gossip message", "msgHash", msgHash.TerminalString(), "msgType", reflect.TypeOf(m.msg), "targetPeer", formatPeers(peers))
+	pids := formatPeers(peers)
+	log.Debug("Gossip message", "msgHash", msgHash.TerminalString(), "msgType", reflect.TypeOf(m.msg), "targetPeer", pids)
 
+	r.cbft.tracing.RecordSend(r.cbft.config.NodeID.TerminalString(), msgHash.TerminalString(), fmt.Sprintf("%T", m.msg), pids)
 	for _, peer := range peers {
 		if err := p2p.Send(peer.rw, msgType, m.msg); err != nil {
 			log.Error("Send message failed", "peer", peer.id, "err", err)
