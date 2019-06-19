@@ -248,9 +248,9 @@ func (h *baseHandler) handleMsg(p *peer) error {
 		if err := msg.Decode(&request); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
-		/*if h.cbft.isForwarded(p.ID(), &request) {
+		if h.cbft.isForwarded(p.ID(), &request) {
 			return nil
-		}*/
+		}
 		p.MarkMessageHash((&request).MsgHash())
 
 		h.cbft.ReceivePeerMsg(&MsgInfo{
@@ -264,9 +264,9 @@ func (h *baseHandler) handleMsg(p *peer) error {
 		if err := msg.Decode(&request); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
-		/*if h.cbft.isForwarded(p.ID(), &request) {
+		if h.cbft.isForwarded(p.ID(), &request) {
 			return nil
-		}*/
+		}
 		p.MarkMessageHash((&request).MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    &request,
@@ -279,9 +279,9 @@ func (h *baseHandler) handleMsg(p *peer) error {
 		if err := msg.Decode(&request); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
-		/*if h.cbft.isForwarded(p.ID(), &request) {
+		if h.cbft.isForwarded(p.ID(), &request) {
 			return nil
-		}*/
+		}
 		p.MarkMessageHash((&request).MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    &request,
@@ -294,9 +294,9 @@ func (h *baseHandler) handleMsg(p *peer) error {
 		if err := msg.Decode(&request); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
-		/*if h.cbft.isForwarded(p.ID(), &request) {
+		if h.cbft.isForwarded(p.ID(), &request) {
 			return nil
-		}*/
+		}
 		p.MarkMessageHash((&request).MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    &request,
