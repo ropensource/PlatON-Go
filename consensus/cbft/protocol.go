@@ -501,7 +501,8 @@ func (gpb *getPrepareBlock) MsgHash() common.Hash {
 	if gpb == nil {
 		return common.Hash{}
 	}
-	return produceHash(GetPrepareBlockMsg, gpb.Hash.Bytes())
+	byt := combineBytes(gpb.Hash.Bytes(), uint64ToBytes(gpb.Number))
+	return produceHash(GetPrepareBlockMsg, byt)
 }
 
 func (gpb *getPrepareBlock) BHash() common.Hash {

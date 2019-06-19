@@ -42,7 +42,7 @@ func (r *router) gossip(m *MsgPackage) {
 	case ConfirmedPrepareBlockMsg, PrepareBlockHashMsg:
 		// check the message is repeated
 		if r.repeatedCheck(m.peerID, msgHash) {
-			log.Debug("The message is repeated, not to forward again","msgType", reflect.TypeOf(m.msg), "msgHash", msgHash.TerminalString())
+			log.Debug("The message is repeated, not to forward again", "msgType", reflect.TypeOf(m.msg), "msgHash", msgHash.TerminalString())
 			return
 		}
 	}
@@ -106,7 +106,7 @@ func (r *router) kConsensusRandomNodes(msgType uint64, condition interface{}) ([
 	log.Debug("kConsensusRandomNodes select node", "msgHash", condition, "cNodesLen", len(cNodes), "peerSetLen", len(existsPeers))
 	consensusPeers := make([]*peer, 0)
 	for _, peer := range existsPeers {
-		if peer.knownMessageHash.Contains(condition) {
+		if msgType != GetHighestPrepareBlockMsg && peer.knownMessageHash.Contains(condition) {
 			continue
 		}
 		for _, node := range cNodes {

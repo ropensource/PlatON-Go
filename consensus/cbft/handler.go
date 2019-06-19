@@ -51,7 +51,7 @@ func NewHandler(cbft *Cbft) *baseHandler {
 		cbft:      cbft,
 		peers:     newPeerSet(),
 		sendQueue: make(chan *MsgPackage, sendQueueSize),
-		quit: make(chan struct{}, 0),
+		quit:      make(chan struct{}, 0),
 	}
 }
 
@@ -221,7 +221,10 @@ func (h *baseHandler) handleMsg(p *peer) error {
 		if err := msg.Decode(&request); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
-
+		if h.cbft.isRepeated(p.ID(), &request) {
+			return nil
+		}
+		p.MarkMessageHash((&request).MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    &request,
 			PeerID: p.ID(),
@@ -275,6 +278,9 @@ func (h *baseHandler) handleMsg(p *peer) error {
 		var request viewChangeVote
 		if err := msg.Decode(&request); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
+		}
+		if h.cbft.isForwarded(p.ID(), &request) {
+			return nil
 		}
 		p.MarkMessageHash((&request).MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
@@ -405,7 +411,7 @@ func (h *baseHandler) syncHighestStatus() {
 					log.Debug("ConfirmedTicker, send getHighestConfirmedStatus message", "currentHighestBn", curHighestNum, "maxHighestPeer", largerPeer.id, "maxHighestBn", largerNum)
 					msg := &getHighestConfirmedStatus{
 						Highest: curHighestNum,
-						Type: HIGHEST_CONFIRMED_BLOCK,
+						Type:    HIGHEST_CONFIRMED_BLOCK,
 					}
 					log.Debug("Send getHighestConfirmedStatus message for confirmed number", "msg", msg.String())
 					h.Send(largerPeer.ID(), msg)
@@ -429,7 +435,7 @@ func (h *baseHandler) syncHighestStatus() {
 					log.Debug("LogicTicker, send getHighestConfirmedStatus message", "currentHighestBn", curLogicHighestNum, "maxLogicHighestPeer", largerPeer.id, "maxLogicHighestBn", largerNum)
 					msg := &getHighestConfirmedStatus{
 						Highest: curLogicHighestNum,
-						Type: HIGHEST_LOGIC_BLOCK,
+						Type:    HIGHEST_LOGIC_BLOCK,
 					}
 					log.Debug("Send getHighestConfirmedStatus message for logic number", "msg", msg.String())
 					h.Send(largerPeer.ID(), msg)

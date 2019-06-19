@@ -144,7 +144,7 @@ type Cbft struct {
 
 	startTimeOfEpoch int64
 
-	evPool *EvidencePool
+	evPool  *EvidencePool
 	tracing *tracing
 }
 
@@ -1021,14 +1021,14 @@ func (cbft *Cbft) OnSendViewChange() {
 func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 	cbft.log.Debug("Receive view change", "peer", peerID, "nodeID", cbft.getValidators().NodeID(int(view.ProposalIndex)), "view", view.String(), "msgHash", view.MsgHash().TerminalString())
 
-	if cbft.viewChange != nil && cbft.viewChange.Equal(view) {
-		cbft.log.Debug("Duplication view change message, discard this")
-		return errDuplicationConsensusMsg
-	}
-
 	if view != nil {
 		// priority forwarding
 		cbft.handler.SendAllConsensusPeer(view)
+	}
+
+	if cbft.viewChange != nil && cbft.viewChange.Equal(view) {
+		cbft.log.Debug("Duplication view change message, discard this")
+		return errDuplicationConsensusMsg
 	}
 
 	bpCtx := context.WithValue(context.Background(), "peer", peerID)
@@ -2345,6 +2345,16 @@ func (cbft *Cbft) isForwarded(nodeId discover.NodeID, msg Message) bool {
 			continue
 		}
 		if peer.knownMessageHash.Contains(msg.MsgHash()) {
+			return true
+		}
+	}
+	return false
+}
+
+func (cbft *Cbft) isRepeated(nodeId discover.NodeID, msg Message) bool {
+	peers := cbft.handler.PeerSet().Peers()
+	for _, peer := range peers {
+		if peer.id == fmt.Sprintf("%x", nodeId.Bytes()[:8]) && peer.knownMessageHash.Contains(msg.MsgHash()) {
 			return true
 		}
 	}
