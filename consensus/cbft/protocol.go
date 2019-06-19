@@ -233,7 +233,7 @@ type viewChange struct {
 	ProposalAddr         common.Address          `json:"proposal_address"`
 	BaseBlockNum         uint64                  `json:"base_block_number"`
 	BaseBlockHash        common.Hash             `json:"base_block_hash"`
-	BaseBlockPrepareVote []*prepareVote          `json:"base_block_prepare_votes"`
+	BaseBlockPrepareVote []*prepareVote          `json:"-"`
 	Signature            common.BlockConfirmSign `json:"signature"`
 	Extra                []byte                  `json:"-"`
 }
