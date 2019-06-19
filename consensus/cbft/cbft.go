@@ -1021,14 +1021,14 @@ func (cbft *Cbft) OnSendViewChange() {
 func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 	cbft.log.Debug("Receive view change", "peer", peerID, "nodeID", cbft.getValidators().NodeID(int(view.ProposalIndex)), "view", view.String(), "msgHash", view.MsgHash().TerminalString())
 
-	if view != nil {
-		// priority forwarding
-		cbft.handler.SendAllConsensusPeer(view)
-	}
-
 	if cbft.viewChange != nil && cbft.viewChange.Equal(view) {
 		cbft.log.Debug("Duplication view change message, discard this")
 		return errDuplicationConsensusMsg
+	}
+
+	if view != nil {
+		// priority forwarding
+		cbft.handler.SendAllConsensusPeer(view)
 	}
 
 	bpCtx := context.WithValue(context.Background(), "peer", peerID)
