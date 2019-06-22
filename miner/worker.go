@@ -1432,6 +1432,10 @@ func (w *worker) shouldCommit(timestamp int64) (bool, *types.Block) {
 				"lastBlockTime", common.MillisToString(nextBaseBlock.Time().Int64()),
 				"interval", timestamp-int64(nextBaseBlock.Time().Uint64()))
 		} else {
+			if currentBaseBlock.NumberU64() == nextBaseBlock.NumberU64() {
+				log.Error("current number must not equal next number", "current", currentBaseBlock.NumberU64(), "next", nextBaseBlock.NumberU64())
+				return false, nil
+			}
 			log.Debug("check if time's up in shouldCommit()", "result", shouldCommit,
 				"current.number", currentBaseBlock.Number(),
 				"current.hash", currentBaseBlock.Hash(),
