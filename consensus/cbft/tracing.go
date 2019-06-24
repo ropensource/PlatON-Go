@@ -12,26 +12,26 @@ import (
 )
 
 const (
-	maxReceiveRecords = 200
-	maxSendRecords    = 200
+	maxReceiveRecords = 80
+	maxSendRecords    = 80
 )
 
 type receiveRecord struct {
-	Time    time.Time   `json:"time"`
-	Order   int64       `json:"order"`
-	SelfId  string      `json:"self_id"`
-	FromId  string      `json:"from_id"`
-	MsgHash string `json:"msg_hash"`
-	Type    string      `json:"type"`
+	Time    time.Time `json:"time"`
+	Order   int64     `json:"order"`
+	SelfId  string    `json:"self_id"`
+	FromId  string    `json:"from_id"`
+	MsgHash string    `json:"msg_hash"`
+	Type    string    `json:"type"`
 }
 
 type sendRecord struct {
-	Time      time.Time   `json:"time"`
-	Order     int64       `json:"order"`
-	SelfId    string      `json:"self_id"`
-	TargetIds []string    `json:"target_ids"`
-	MsgHash   string 	  `json:"msg_hash"`
-	Type      string      `json:"type"`
+	Time      time.Time `json:"time"`
+	Order     int64     `json:"order"`
+	SelfId    string    `json:"self_id"`
+	TargetIds []string  `json:"target_ids"`
+	MsgHash   string    `json:"msg_hash"`
+	Type      string    `json:"type"`
 }
 
 func (rr *receiveRecord) ToJSON() ([]byte, error) {
