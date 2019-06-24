@@ -33,8 +33,8 @@ func TestNewHandler(t *testing.T) {
 	peer := newPeer(p2pPeer, fake)
 	ps.Register(peer)
 
-	p, _ := handler.GetPeer("pid")
-	assert.Nil(t, p)
+	p, _ := handler.GetPeer(id.TerminalString())
+	assert.NotNil(t, p)
 	p, _ = handler.GetPeer("")
 	assert.Nil(t, p)
 
