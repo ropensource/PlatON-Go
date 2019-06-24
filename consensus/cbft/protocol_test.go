@@ -398,8 +398,8 @@ func TestCbftStatusData(t *testing.T) {
 }
 
 func TestGetHighestConfirmedStatus(t *testing.T) {
-	var empty *getHighestConfirmedStatus
-	pbh := &getHighestConfirmedStatus{
+	var empty *getLatestStatus
+	pbh := &getLatestStatus{
 		Highest: 1,
 		Type: 1,
 	}
@@ -407,8 +407,8 @@ func TestGetHighestConfirmedStatus(t *testing.T) {
 }
 
 func TestHighestConfirmedStatus(t *testing.T) {
-	var empty *highestConfirmedStatus
-	pbh := &getHighestConfirmedStatus{
+	var empty *latestStatus
+	pbh := &latestStatus{
 		Highest: 1,
 		Type: 1,
 	}

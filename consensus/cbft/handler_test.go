@@ -34,7 +34,7 @@ func TestNewHandler(t *testing.T) {
 	ps.Register(peer)
 
 	p, _ := handler.GetPeer("pid")
-	assert.NotNil(t, p)
+	assert.Nil(t, p)
 	p, _ = handler.GetPeer("")
 	assert.Nil(t, p)
 
@@ -102,8 +102,8 @@ func TestHandlerMsg(t *testing.T) {
 		{GetHighestPrepareBlockMsg, &getHighestPrepareBlock{}, nil},
 		{HighestPrepareBlockMsg, &highestPrepareBlock{}, nil},
 		{PrepareBlockHashMsg, &prepareBlockHash{}, nil},
-		{GetHighestConfirmStatusMsg, &getHighestConfirmedStatus{}, nil},
-		{HighestConfirmedStatusMsg, &highestConfirmedStatus{}, nil},
+		{GetLatestStatusMsg, &getLatestStatus{}, nil},
+		{LatestStatusMsg, &latestStatus{}, nil},
 	}
 
 	for _, v := range testCases {
