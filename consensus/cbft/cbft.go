@@ -907,6 +907,11 @@ func (cbft *Cbft) OnSeal(sealedBlock *types.Block, sealResultCh chan<- *types.Bl
 			"state", cbft.blockState())
 		return
 	}
+	logicNum := cbft.getHighestLogical().number
+	if logicNum == sealedBlock.NumberU64() {
+		cbft.log.Warn("logicNum must not equal sealedBlock", "logicNum", logicNum, "sealedNum", sealedBlock.NumberU64())
+		return
+	}
 
 	current := NewBlockExt(sealedBlock, sealedBlock.NumberU64(), cbft.nodeLength())
 

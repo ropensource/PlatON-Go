@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	maxReceiveRecords = 88
-	maxSendRecords    = 88
+	maxReceiveRecords = 80
+	maxSendRecords    = 80
 )
 
 type receiveRecord struct {
