@@ -37,18 +37,18 @@ import (
 )
 
 var (
-	errSign                = errors.New("sign error")
-	errUnauthorizedSigner  = errors.New("unauthorized signer")
-	errIllegalBlock        = errors.New("illegal block")
-	lateBlock              = errors.New("block is late")
-	errDuplicatedBlock     = errors.New("duplicated block")
-	errBlockNumber         = errors.New("error block number")
-	errUnknownBlock        = errors.New("unknown block")
-	errFutileBlock         = errors.New("futile block")
-	errGenesisBlock        = errors.New("cannot handle genesis block")
-	errHighestLogicalBlock = errors.New("cannot find a logical block")
-	errListConfirmedBlocks = errors.New("list confirmed blocks error")
-	errMissingSignature    = errors.New("extra-data 65 byte signature suffix missing")
+	errSign = errors.New("sign error")
+	//errUnauthorizedSigner  = errors.New("unauthorized signer")
+	//errIllegalBlock        = errors.New("illegal block")
+	//lateBlock              = errors.New("block is late")
+	//errDuplicatedBlock     = errors.New("duplicated block")
+	//errBlockNumber         = errors.New("error block number")
+	errUnknownBlock = errors.New("unknown block")
+	errFutileBlock  = errors.New("futile block")
+	//errGenesisBlock        = errors.New("cannot handle genesis block")
+	//errHighestLogicalBlock = errors.New("cannot find a logical block")
+	//errListConfirmedBlocks = errors.New("list confirmed blocks error")
+	errMissingSignature = errors.New("extra-data 65 byte signature suffix missing")
 
 	errInitiateViewchange          = errors.New("not initiated viewChange")
 	errTwoThirdViewchangeVotes     = errors.New("lower two third viewChangeVotes")
@@ -59,12 +59,12 @@ var (
 	errInvalidatorCandidateAddress = errors.New("invalid address")
 	errDuplicationConsensusMsg     = errors.New("duplication message")
 
-	errInvalidVrfProve = errors.New("Invalid vrf prove")
-	extraSeal          = 65
-	windowSize         = 10
+	//errInvalidVrfProve = errors.New("Invalid vrf prove")
+	extraSeal = 65
+	//windowSize         = 10
 
 	//periodMargin is a percentum for period margin
-	periodMargin = uint64(20)
+	//periodMargin = uint64(20)
 
 	//maxPingLatency is the time in milliseconds between Ping and Pong
 	maxPingLatency = int64(5000)
@@ -76,7 +76,7 @@ var (
 
 	// lastBlockOffsetMs is the offset in milliseconds for the last block deadline
 	// calculate. (200ms)
-	lastBlockOffsetMs = 200 * time.Millisecond
+	//lastBlockOffsetMs = 200 * time.Millisecond
 
 	peerMsgQueueSize = 1024
 	cbftVersion      = byte(0x01)
@@ -85,6 +85,10 @@ var (
 
 	maxQueuesLimit = 4096
 )
+
+func NewFaker() consensus.Engine {
+	return new(consensus.BftMock)
+}
 
 type Cbft struct {
 	config      *params.CbftConfig
@@ -97,10 +101,6 @@ type Cbft struct {
 	running     int32
 	peerMsgCh   chan *MsgInfo
 	syncBlockCh chan *BlockExt
-
-	highestLogical   atomic.Value //highest block in logical path, local packages new block will base on it
-	highestConfirmed atomic.Value //highest confirmed block in logical path
-	rootIrreversible atomic.Value //the latest block has stored in chain
 
 	executeBlockCh          chan *ExecuteBlockStatus
 	baseBlockCh             chan chan *types.Block
@@ -146,7 +146,7 @@ type Cbft struct {
 
 	startTimeOfEpoch int64
 
-	evPool  *EvidencePool
+	evPool  EvidencePool
 	tracing *tracing
 }
 
@@ -177,7 +177,7 @@ func New(config *params.CbftConfig, eventMux *event.TypeMux, ctx *node.ServiceCo
 		nodeServiceContext:      ctx,
 	}
 
-	evPool, err := NewEvidencePool(ctx.ResolvePath(evidenceDir))
+	evPool, err := NewEvidencePoolByCtx(ctx)
 	if err != nil {
 		return nil
 	}
@@ -189,29 +189,6 @@ func New(config *params.CbftConfig, eventMux *event.TypeMux, ctx *node.ServiceCo
 	cbft.resetCache, _ = lru.New(maxResetCacheSize)
 	cbft.tracing = NewTracing()
 	return cbft
-}
-
-func (cbft *Cbft) getRootIrreversible() *BlockExt {
-	if v := cbft.rootIrreversible.Load(); v == nil {
-		panic("Get root block failed")
-	} else {
-		return v.(*BlockExt)
-	}
-}
-
-func (cbft *Cbft) getHighestConfirmed() *BlockExt {
-	if v := cbft.highestConfirmed.Load(); v == nil {
-		panic("Get highest confirmed block failed")
-	} else {
-		return v.(*BlockExt)
-	}
-}
-func (cbft *Cbft) getHighestLogical() *BlockExt {
-	if v := cbft.highestLogical.Load(); v == nil {
-		panic("Get highest logical block failed")
-	} else {
-		return v.(*BlockExt)
-	}
 }
 
 func (cbft *Cbft) getValidators() *cbfttypes.Validators {
