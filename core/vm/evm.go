@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"github.com/PlatONnetwork/PlatON-Go/x/plugin"
 	"math/big"
 	"strings"
 	"sync/atomic"
@@ -24,7 +25,6 @@ import (
 
 	"github.com/PlatONnetwork/PlatON-Go/common"
 	"github.com/PlatONnetwork/PlatON-Go/crypto"
-	"github.com/PlatONnetwork/PlatON-Go/log"
 	"github.com/PlatONnetwork/PlatON-Go/params"
 )
 
@@ -52,24 +52,36 @@ func run(evm *EVM, contract *Contract, input []byte, readOnly bool) ([]byte, err
 		if p := precompiles[*contract.CodeAddr]; p != nil {
 			return RunPrecompiledContract(p, input, contract)
 		}
-		// ppos
-		if p := PrecompiledContractsPpos[*contract.CodeAddr]; p != nil {
-			log.Info("IN PPOS PrecompiledContractsPpos ... ")
-			switch r := p.(type) {
-			case *CandidateContract:
-				r = &CandidateContract{}
-				r.Contract = contract
-				r.Evm = evm
-				return RunPrecompiledContract(r, input, contract)
-			case *TicketContract:
-				r = &TicketContract{}
-				r.Contract = contract
-				r.Evm = evm
-				return RunPrecompiledContract(r, input, contract)
-			default:
-				log.Error("error type","contract.CodeAddr",*contract.CodeAddr)
+		if p := PrecompiledContracts[*contract.CodeAddr]; p != nil {
+			vic := &validatorInnerContract{
+				Contract: contract,
+				Evm:      evm,
+			}
+			return RunPrecompiledContract(vic, input, contract)
+		}
+
+		if p := PlatONPrecompiledContracts[*contract.CodeAddr]; p != nil {
+			switch p.(type) {
+			case *stakingContract:
+				staking := &stakingContract{
+					plugin:   plugin.StakingInstance(nil),
+					Contract: contract,
+					Evm:      evm,
+				}
+				return RunPlatONPrecompiledContract(staking, input, contract)
+			case *restrictingContract:
+				restricting := &restrictingContract{
+					plugin  : plugin.GetRestrictingInstance(),
+					Contract: contract,
+					Evm:      evm,
+				}
+				return RunPlatONPrecompiledContract(restricting, input, contract)
 			}
 		}
+
+
+
+
 	}
 
 	for _, interpreter := range evm.interpreters {
@@ -109,6 +121,8 @@ type Context struct {
 	BlockNumber *big.Int       // Provides information for NUMBER
 	Time        *big.Int       // Provides information for TIME
 	Difficulty  *big.Int       // Provides information for DIFFICULTY
+
+	BlockHash common.Hash  		// Only, the value will be available after the current block has been sealed.
 }
 
 // EVM is the Ethereum Virtual Machine base object and provides
@@ -146,10 +160,6 @@ type EVM struct {
 	// available gas is calculated in gasCall* according to the 63/64 rule and later
 	// applied in opCall*.
 	callGasTemp uint64
-
-	//ppos add
-	CandidatePoolContext candidatePoolContext
-	TicketPoolContext    ticketPoolContext
 }
 
 // NewEVM returns a new EVM. The returned EVM is not thread safe and should
@@ -214,7 +224,7 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		if evm.ChainConfig().IsByzantium(evm.BlockNumber) {
 			precompiles = PrecompiledContractsByzantium
 		}
-		if precompiles[addr] == nil && PrecompiledContractsPpos[addr] == nil && evm.ChainConfig().IsEIP158(evm.BlockNumber) && value.Sign() == 0 {
+		if precompiles[addr] == nil && PrecompiledContracts[addr] == nil && PlatONPrecompiledContracts[addr] == nil && evm.ChainConfig().IsEIP158(evm.BlockNumber) && value.Sign() == 0 {
 			// Calling a non existing account, don't do anything, but ping the tracer
 			if evm.vmConfig.Debug && evm.depth == 0 {
 				evm.vmConfig.Tracer.CaptureStart(caller.Address(), addr, false, input, gas, value)

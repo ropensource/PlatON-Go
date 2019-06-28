@@ -17,13 +17,12 @@
 package eth
 
 import (
-	"github.com/PlatONnetwork/PlatON-Go/node"
 	"fmt"
+	"github.com/PlatONnetwork/PlatON-Go/node"
 	"math/big"
 	"os"
 	"os/user"
 	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/PlatONnetwork/PlatON-Go/common"
@@ -41,28 +40,15 @@ const (
 
 // DefaultConfig contains default settings for use on the Ethereum main net.
 var DefaultConfig = Config{
-	SyncMode: downloader.FastSync,
+	SyncMode: downloader.FullSync,
 	CbftConfig: CbftConfig{
 		Period:           1,
 		Epoch:            250000,
 		MaxLatency:       600,
 		LegalCoefficient: 1.0,
 		Duration:         10,
-		Ppos: &PposConfig{
-			Candidate: &CandidateConfig{
-				Threshold: 			"1000000000000000000000000",
-				DepositLimit: 	  	10,
-				Allowed: 			512,
-				MaxChair:          	10,
-				MaxCount:          	100,
-				RefundBlockNumber: 	512,
-			},
-			Ticket: &TicketConfig{
-				TicketPrice: 		"100000000000000000000",
-				MaxCount:			51200,
-				ExpireBlockNumber: 	1536000,
-			},
-		},
+		BlockInterval:    100,
+		WalMode:          false,
 	},
 	NetworkId:     1,
 	LightPeers:    100,
@@ -80,8 +66,8 @@ var DefaultConfig = Config{
 		Percentile: 60,
 	},
 
-	MPCPool: core.DefaultMPCPoolConfig,
-	VCPool:  core.DefaultVCPoolConfig,
+	//MPCPool: core.DefaultMPCPoolConfig,
+	//VCPool:  core.DefaultVCPoolConfig,
 }
 
 func init() {
@@ -90,11 +76,6 @@ func init() {
 		if user, err := user.Current(); err == nil {
 			home = user.HomeDir
 		}
-	}
-	if runtime.GOOS == "windows" {
-		//DefaultConfig.Ethash.DatasetDir = filepath.Join(home, "AppData", "Ethash")
-	} else {
-		//DefaultConfig.Ethash.DatasetDir = filepath.Join(home, ".ethash")
 	}
 }
 
@@ -124,7 +105,6 @@ type Config struct {
 	TrieTimeout        time.Duration
 
 	// Mining-related options
-	Etherbase      common.Address `toml:",omitempty"`
 	MinerNotify    []string       `toml:",omitempty"`
 	MinerExtraData []byte         `toml:",omitempty"`
 	MinerGasFloor  uint64
@@ -150,49 +130,24 @@ type Config struct {
 	// Type of the EVM interpreter ("" for default)
 	EVMInterpreter string
 
-
 	// MPC pool options
-	MPCPool core.MPCPoolConfig
-	VCPool  core.VCPoolConfig
-	Debug bool
+	//MPCPool core.MPCPoolConfig
+	//VCPool  core.VCPoolConfig
+	Debug   bool
 }
 
 type CbftConfig struct {
-	Period           uint64  `json:"period"`           // Number of seconds between blocks to enforce
-	Epoch            uint64  `json:"epoch"`            // Epoch length to reset votes and checkpoint
+	Period           uint64  `json:"period"` // Number of seconds between blocks to enforce
+	Epoch            uint64  `json:"epoch"`  // Epoch length to reset votes and checkpoint
 	MaxLatency       int64   `json:"maxLatency"`
 	LegalCoefficient float64 `json:"legalCoefficient"`
 	Duration         int64   `json:"duration"`
-	Ppos 			*PposConfig 	`json:"ppos"`
-}
+	BlockInterval    uint64  `json:"-"`
 
-
-type PposConfig struct {
-	Candidate 				*CandidateConfig 			`json:"candidate"`
-	Ticket 					*TicketConfig 				`json:"ticket"`
-}
-
-type CandidateConfig struct {
-	// min deposit allow threshold
-	Threshold				string 					`json:"threshold"`
-	// min deposit limit percentage
-	DepositLimit 			uint32					`json:"depositLimit"`
-	// allow put into immedidate condition
-	Allowed					uint32					`json:"allowed"`
-	// allow immediate elected max count
-	MaxCount				uint32					`json:"maxCount"`
-	// allow witness max count
-	MaxChair				uint32					`json:"maxChair"`
-	// allow block interval for refunds
-	RefundBlockNumber 		uint32 					`json:"refundBlockNumber"`
-
-}
-type TicketConfig struct {
-	TicketPrice 		string 						`json:"ticketPrice"`
-	// Maximum number of ticket pool
-	MaxCount				uint32					`json:"maxCount"`
-	// Reach expired quantity
-	ExpireBlockNumber		uint32					`json:"expireBlockNumber"`
+	//breakpoint type:tracing
+	BreakpointType string
+	BreakpointLog  string
+	WalMode        bool
 }
 
 type configMarshaling struct {

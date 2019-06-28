@@ -162,6 +162,7 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.BootnodesV5Flag,
 			utils.ListenPortFlag,
 			utils.MaxPeersFlag,
+			utils.MaxConsensusPeersFlag,
 			utils.MaxPendingPeersFlag,
 			utils.NATFlag,
 			utils.NoDiscoverFlag,
@@ -180,7 +181,6 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.MinerGasPriceFlag,
 			utils.MinerGasTargetFlag,
 			utils.MinerGasLimitFlag,
-			utils.MinerEtherbaseFlag,
 			utils.MinerExtraDataFlag,
 			utils.MinerRecommitIntervalFlag,
 			utils.MinerNoVerfiyFlag,
@@ -230,7 +230,6 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.MinerLegacyThreadsFlag,
 			utils.MinerLegacyGasTargetFlag,
 			utils.MinerLegacyGasPriceFlag,
-			utils.MinerLegacyEtherbaseFlag,
 			utils.MinerLegacyExtraDataFlag,
 		},
 	},
@@ -248,6 +247,14 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.VCEnabledFlag,
 			utils.VCActorFlag,
 			utils.VCPasswordFlag,
+		},
+	},
+	{
+		Name: "CBFT",
+		Flags: []cli.Flag{
+			utils.CbftBlockIntervalFlag,
+			utils.CbftBreakpointFlag,
+			utils.WalEnabledFlag,
 		},
 	},
 	{

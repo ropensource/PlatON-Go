@@ -19,6 +19,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/PlatONnetwork/PlatON-Go/consensus/cbft"
+	"github.com/PlatONnetwork/PlatON-Go/miner"
 	"os"
 	"runtime"
 	"strconv"
@@ -207,13 +209,37 @@ func initGenesis(ctx *cli.Context) error {
 	return nil
 }
 
+type FakeBackend struct {
+	bc *core.BlockChain
+}
+
+func (f *FakeBackend) BlockChain() *core.BlockChain {
+	return f.bc
+}
+
+func (f *FakeBackend) TxPool() *core.TxPool {
+	return nil
+}
+
 func importChain(ctx *cli.Context) error {
 	if len(ctx.Args()) < 1 {
 		utils.Fatalf("This command requires an argument.")
 	}
-	stack := makeFullNode(ctx)
-	chain, chainDb := utils.MakeChain(ctx, stack)
+	// todo:
+	stack, gethConfig := makeFullNodeForCBFT(ctx)
+	chain, chainDb := utils.MakeChainForCBFT(ctx, stack, &gethConfig.Eth, &gethConfig.Node)
 	defer chainDb.Close()
+	if c, ok := chain.Engine().(*cbft.Cbft); ok {
+		blockChainCache := core.NewBlockChainCache(chain)
+		c.SetBlockChainCache(blockChainCache)
+		agency := cbft.NewStaticAgency(chain.Config().Cbft.InitialNodes)
+		// init worker
+		bc := &FakeBackend{bc: chain}
+		miner := miner.New(bc, chain.Config(), stack.EventMux(), c, gethConfig.Eth.MinerRecommit, gethConfig.Eth.MinerGasFloor, gethConfig.Eth.MinerGasCeil, nil, blockChainCache)
+		c.Start(chain, nil, agency)
+		defer c.Close()
+		defer miner.Stop()
+	}
 
 	// Start periodically gathering memory profiles
 	var peakMemAlloc, peakMemSys uint64
@@ -457,7 +483,7 @@ func dump(ctx *cli.Context) error {
 			fmt.Println("{}")
 			utils.Fatalf("block not found")
 		} else {
-			state, err := state.New(block.Root(), state.NewDatabase(chainDb), block.Number(), block.Hash())
+			state, err := state.New(block.Root(), state.NewDatabase(chainDb))
 			if err != nil {
 				utils.Fatalf("could not create new state: %v", err)
 			}

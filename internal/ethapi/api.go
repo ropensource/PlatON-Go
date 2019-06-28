@@ -21,10 +21,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/PlatONnetwork/PlatON-Go/consensus"
 	"math/big"
-	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/PlatONnetwork/PlatON-Go/accounts"
@@ -45,6 +43,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
+	"strings"
 )
 
 const (
@@ -487,24 +486,24 @@ func NewPublicBlockChainAPI(b Backend) *PublicBlockChainAPI {
 }
 
 // SetActor set address for mpc compute.
-func (s *PublicBlockChainAPI) SetActor(address common.Address) error {
-	absPath, err := filepath.Abs(core.DEFAULT_ACTOR_FILE_NAME)
-	if err != nil {
-		return fmt.Errorf("File not exists : %v", err.Error())
-	}
-	f, err := os.OpenFile(absPath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("open file error : %v ", err.Error())
-	}
-	f.Write(address.Bytes())
-	f.Close()
-
-	if core.MPC_POOL != nil {
-		core.MPC_POOL.LoadActor()
-	}
-
-	return nil
-}
+//func (s *PublicBlockChainAPI) SetActor(address common.Address) error {
+//	absPath, err := filepath.Abs(core.DEFAULT_ACTOR_FILE_NAME)
+//	if err != nil {
+//		return fmt.Errorf("File not exists : %v", err.Error())
+//	}
+//	f, err := os.OpenFile(absPath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.ModePerm)
+//	if err != nil {
+//		return fmt.Errorf("open file error : %v ", err.Error())
+//	}
+//	f.Write(address.Bytes())
+//	f.Close()
+//
+//	if core.MPC_POOL != nil {
+//		core.MPC_POOL.LoadActor()
+//	}
+//
+//	return nil
+//}
 
 // BlockNumber returns the block number of the chain head.
 func (s *PublicBlockChainAPI) BlockNumber() hexutil.Uint64 {
@@ -548,56 +547,6 @@ func (s *PublicBlockChainAPI) GetBlockByHash(ctx context.Context, blockHash comm
 		return s.rpcOutputBlock(block, true, fullTx)
 	}
 	return nil, err
-}
-
-// GetUncleByBlockNumberAndIndex returns the uncle block for the given block hash and index. When fullTx is true
-// all transactions in the block are returned in full detail, otherwise only the transaction hash is returned.
-func (s *PublicBlockChainAPI) GetUncleByBlockNumberAndIndex(ctx context.Context, blockNr rpc.BlockNumber, index hexutil.Uint) (map[string]interface{}, error) {
-	block, err := s.b.BlockByNumber(ctx, blockNr)
-	if block != nil {
-		uncles := block.Uncles()
-		if index >= hexutil.Uint(len(uncles)) {
-			log.Debug("Requested uncle not found", "number", blockNr, "hash", block.Hash(), "index", index)
-			return nil, nil
-		}
-		block = types.NewBlockWithHeader(uncles[index])
-		return s.rpcOutputBlock(block, false, false)
-	}
-	return nil, err
-}
-
-// GetUncleByBlockHashAndIndex returns the uncle block for the given block hash and index. When fullTx is true
-// all transactions in the block are returned in full detail, otherwise only the transaction hash is returned.
-func (s *PublicBlockChainAPI) GetUncleByBlockHashAndIndex(ctx context.Context, blockHash common.Hash, index hexutil.Uint) (map[string]interface{}, error) {
-	block, err := s.b.GetBlock(ctx, blockHash)
-	if block != nil {
-		uncles := block.Uncles()
-		if index >= hexutil.Uint(len(uncles)) {
-			log.Debug("Requested uncle not found", "number", block.Number(), "hash", blockHash, "index", index)
-			return nil, nil
-		}
-		block = types.NewBlockWithHeader(uncles[index])
-		return s.rpcOutputBlock(block, false, false)
-	}
-	return nil, err
-}
-
-// GetUncleCountByBlockNumber returns number of uncles in the block for the given block number
-func (s *PublicBlockChainAPI) GetUncleCountByBlockNumber(ctx context.Context, blockNr rpc.BlockNumber) *hexutil.Uint {
-	if block, _ := s.b.BlockByNumber(ctx, blockNr); block != nil {
-		n := hexutil.Uint(len(block.Uncles()))
-		return &n
-	}
-	return nil
-}
-
-// GetUncleCountByBlockHash returns number of uncles in the block for the given block hash
-func (s *PublicBlockChainAPI) GetUncleCountByBlockHash(ctx context.Context, blockHash common.Hash) *hexutil.Uint {
-	if block, _ := s.b.GetBlock(ctx, blockHash); block != nil {
-		n := hexutil.Uint(len(block.Uncles()))
-		return &n
-	}
-	return nil
 }
 
 // GetCode returns the code stored at the given address in the state for the given block number.
@@ -822,7 +771,6 @@ func RPCMarshalBlock(b *types.Block, inclTx bool, fullTx bool) (map[string]inter
 		"parentHash":       head.ParentHash,
 		"nonce":            head.Nonce,
 		"mixHash":          head.MixDigest,
-		"sha3Uncles":       head.UncleHash,
 		"logsBloom":        head.Bloom,
 		"stateRoot":        head.Root,
 		"miner":            head.Coinbase,
@@ -854,20 +802,6 @@ func RPCMarshalBlock(b *types.Block, inclTx bool, fullTx bool) (map[string]inter
 		}
 		fields["transactions"] = transactions
 	}
-
-	uncles := b.Uncles()
-	uncleHashes := make([]common.Hash, len(uncles))
-	for i, uncle := range uncles {
-		uncleHashes[i] = uncle.Hash()
-	}
-	fields["uncles"] = uncleHashes
-
-	signatures := b.Signatures()
-	signHashes := make([]string, len(signatures))
-	for i, sign := range signatures {
-		signHashes[i] = sign.String()
-	}
-	fields["signatures"] = signHashes
 
 	return fields, nil
 }
@@ -1513,4 +1447,26 @@ func (s *PublicNetAPI) PeerCount() hexutil.Uint {
 // Version returns the current ethereum protocol version.
 func (s *PublicNetAPI) Version() string {
 	return fmt.Sprintf("%d", s.networkVersion)
+}
+
+// PublicBlockChainAPI provides an API to access the Ethereum blockchain.
+// It offers only methods that operate on public data that is freely available to anyone.
+type PublicConsensusAPI struct {
+	b Backend
+}
+
+// NewPublicBlockChainAPI creates a new Ethereum blockchain API.
+func NewPublicConsensusAPI(b Backend) *PublicConsensusAPI {
+	return &PublicConsensusAPI{b}
+}
+
+func (s *PublicConsensusAPI) ConsensusStatus() string {
+	return s.b.Engine().Status()
+}
+
+func (s *PublicConsensusAPI) Evidences() string {
+	if bft, ok := s.b.Engine().(consensus.Bft); ok {
+		return bft.Evidences()
+	}
+	return ""
 }
