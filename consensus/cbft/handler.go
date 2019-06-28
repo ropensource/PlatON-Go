@@ -75,7 +75,7 @@ func (h *baseHandler) sendLoop() {
 		select {
 		case m := <-h.sendQueue:
 			if m == nil || h.cbft.isLoading() {
-				log.Warn("read msg from sendQueue, message is nil or isLoading is true")
+				log.Warn("read msg from sendQueue, message is nil or isLoading is true", "isLoading", h.cbft.isLoading())
 				return
 			}
 			log.Debug("send msg to queue", "mode", m.mode, "msgHash", m.msg.MsgHash().TerminalString(), "isLoading", h.cbft.isLoading())
