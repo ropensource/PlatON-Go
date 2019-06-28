@@ -1240,10 +1240,11 @@ func (bm *BlockExtMap) Total() int {
 }
 func (bm *BlockExtMap) GetSubChainWithTwoThirdVotes(hash common.Hash, number uint64) []*BlockExt {
 	base := bm.findBlock(hash, number)
-	log.Debug("GetSubChainWithTwoThirdVotes", "hash", hash, "number", number, "prepareVotes", base.prepareVotes.Len(), "threshold", bm.threshold, "headHash", bm.head.block.Hash(), "headNumber", bm.head.number)
 	if base == nil || base.prepareVotes.Len() < bm.threshold {
+		log.Debug("GetSubChainWithTwoThirdVotes - base is nil or the len of prepareVotes in the baseBlock less than bm.threshold")
 		return nil
 	}
+	log.Debug("GetSubChainWithTwoThirdVotes", "hash", hash, "number", number, "prepareVotes", base.prepareVotes.Len(), "threshold", bm.threshold, "headHash", bm.head.block.Hash(), "headNumber", bm.head.number)
 
 	blockExts := make([]*BlockExt, 0)
 
