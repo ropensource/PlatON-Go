@@ -107,7 +107,7 @@ func (s *snapshotDB) recover(stor storage) error {
 	dbpath := stor.Path()
 	c, err := loadCurrent(dbpath)
 	if err != nil {
-		return err
+		return fmt.Errorf("[SnapshotDB.recover]load  current fail:%v", err)
 	}
 	s.path = dbpath
 	s.current = c
@@ -115,7 +115,7 @@ func (s *snapshotDB) recover(stor storage) error {
 	//baseDB
 	baseDB, err := leveldb.OpenFile(getBaseDBPath(dbpath), nil)
 	if err != nil {
-		return fmt.Errorf("[SnapshotDB]open baseDB fail:%v", err)
+		return fmt.Errorf("[SnapshotDB.recover]open baseDB fail:%v", err)
 	}
 	s.baseDB = baseDB
 
@@ -149,7 +149,7 @@ func (s *snapshotDB) recover(stor storage) error {
 				//2. open writer
 				w, err := s.storage.Append(fd)
 				if err != nil {
-					return err
+					return fmt.Errorf("[SnapshotDB.recover]unRecognizedHash open storage fail:%v", err)
 				}
 				s.journalw[fd.BlockHash] = newJournalWriter(w)
 			} else {
@@ -159,7 +159,7 @@ func (s *snapshotDB) recover(stor storage) error {
 				if !block.readOnly {
 					w, err := s.storage.Append(fd)
 					if err != nil {
-						return err
+						return fmt.Errorf("[SnapshotDB.recover]recognized open storage fail:%v", err)
 					}
 					s.journalw[fd.BlockHash] = newJournalWriter(w)
 				}
@@ -195,7 +195,9 @@ func (s *snapshotDB) generateKVHash(k, v []byte, hash common.Hash) common.Hash {
 }
 
 func (s *snapshotDB) getUnRecognizedHash() common.Hash {
-	return rlpHash("CURRENT")
+	var buf bytes.Buffer
+	buf.Write([]byte("CURRENT"))
+	return rlpHash(buf.Bytes())
 }
 
 func (s *snapshotDB) closeJournalWriter(hash common.Hash) error {
@@ -224,44 +226,89 @@ func (s *snapshotDB) rmOldRecognizedBlockData() error {
 }
 
 const (
-	hashLocationRecognized = 1
-	hashLocationCommitted  = 2
+	hashLocationUnRecognized = 1
+	hashLocationRecognized   = 2
+	hashLocationCommitted    = 3
+	hashLocationNotFound     = 4
 )
 
 func (s *snapshotDB) checkHashChain(hash common.Hash) (int, bool) {
 	lastblockNumber := big.NewInt(0)
-	// find from recognized
-	for {
-		if data, ok := s.recognized[hash]; ok {
-			hash = data.ParentHash
-			lastblockNumber = data.Number
-		} else {
-			break
+	lastParenthash := common.ZeroHash
+	if hash == common.ZeroHash {
+		if s.unRecognized == nil {
+			return 0, false
 		}
-	}
-	//check find from recognized is right
-	if lastblockNumber.Int64() > 0 {
-		if len(s.committed) > 0 {
-			commitBlock := s.committed[len(s.committed)-1]
-			if lastblockNumber.Int64()-1 != commitBlock.Number.Int64() {
+		lastParenthash = s.unRecognized.ParentHash
+		lastblockNumber = s.unRecognized.Number
+		if s.current.HighestNum.Int64() >= s.unRecognized.Number.Int64() {
+			return 0, false
+		}
+		for {
+			if data, ok := s.recognized[lastParenthash]; ok {
+				if lastParenthash == data.ParentHash {
+					logger.Error("loop error")
+					return 0, false
+				}
+				lastblockNumber = data.Number
+				lastParenthash = data.ParentHash
+			} else {
+				break
+			}
+		}
+		if lastblockNumber.Int64() > 0 {
+			if s.current.HighestNum.Int64() != lastblockNumber.Int64()-1 {
 				return 0, false
 			}
-			if commitBlock.BlockHash.String() != hash.String() {
+			if s.current.LastHash == common.ZeroHash {
+				return hashLocationUnRecognized, true
+			}
+			if s.current.LastHash != lastParenthash {
+				return 0, false
+			}
+			return hashLocationUnRecognized, true
+		}
+		return 0, false
+	}
+	{
+		// find from recognized
+		lastParenthash = hash
+		for {
+			if data, ok := s.recognized[lastParenthash]; ok {
+				if lastParenthash == data.ParentHash {
+					logger.Error("loop error")
+					return 0, false
+				}
+				lastParenthash = data.ParentHash
+				lastblockNumber = data.Number
+			} else {
+				break
+			}
+		}
+
+		//check find from recognized is right
+		if lastblockNumber.Int64() > 0 {
+			if s.current.HighestNum.Int64() != lastblockNumber.Int64()-1 {
+				return 0, false
+			}
+			if s.current.LastHash == common.ZeroHash {
+				return hashLocationRecognized, true
+			}
+			if s.current.LastHash != lastParenthash {
 				return 0, false
 			}
 			return hashLocationRecognized, true
 		}
-		if s.current.HighestNum.Int64() == lastblockNumber.Int64()-1 {
-			return hashLocationRecognized, true
-		}
 	}
+
 	// find from committed
 	for _, value := range s.committed {
 		if value.BlockHash == hash {
 			return hashLocationCommitted, true
 		}
 	}
-	return 0, false
+
+	return hashLocationNotFound, true
 }
 
 func (s *snapshotDB) put(hash common.Hash, key, value []byte, funcType uint64) error {

@@ -602,7 +602,7 @@ func (cbft *Cbft) newViewChangeProcess(view *viewChange) {
 func (cbft *Cbft) VerifyAndViewChange(view *viewChange) error {
 
 	now := time.Now().UnixNano() / 1e6
-	if !cbft.isLegal(now, view.ProposalAddr) {
+	if !cbft.isLegal(now, view.ProposalAddr) || cbft.checkViewChangeRealTimeout(view.ProposalIndex) {
 		cbft.log.Error("Receive view change timeout", "current", now, "remote", view.Timestamp)
 		return errRecvViewTimeout
 	}
@@ -640,6 +640,11 @@ func (cbft *Cbft) VerifyAndViewChange(view *viewChange) error {
 	if view.BaseBlockNum != 0 && len(view.BaseBlockPrepareVote) < cbft.getThreshold() {
 		cbft.log.Error("View's prepare vote < 2f", "view", view.String())
 		return errTwoThirdPrepareVotes
+	}
+
+	if err := cbft.verifyValidatorSign(cbft.nextRoundValidator(view.BaseBlockNum), view.ProposalIndex, view.ProposalAddr, view, view.Signature[:]); err != nil {
+		cbft.log.Error("Verify viewChange signature fail", "view", view, "err", err)
+		return errInvalidViewChange
 	}
 
 	for _, vote := range view.BaseBlockPrepareVote {
@@ -1127,18 +1132,15 @@ func (bm *BlockExtMap) Add(hash common.Hash, number uint64, blockExt *BlockExt) 
 		if ext, ok := extMap[hash]; ok {
 			log.Debug(fmt.Sprintf("hash:%s, number:%d", hash.TerminalString(), number))
 			ext.Merge(blockExt)
-			if ext.prepareVotes.IsMaj23() {
-				bm.removeFork(number, hash)
-			}
+			bm.removeFork(number)
+
 			if ext.block != nil {
 				bm.fixChain(ext)
 			}
 		} else {
 			log.Debug(fmt.Sprintf("hash:%s, number:%d", hash.TerminalString(), number))
-			if blockExt.prepareVotes.IsMaj23() {
-				bm.removeFork(number, hash)
-			}
 			extMap[hash] = blockExt
+			bm.removeFork(number)
 			if blockExt.block != nil {
 				bm.fixChain(blockExt)
 			}
@@ -1149,21 +1151,34 @@ func (bm *BlockExtMap) Add(hash common.Hash, number uint64, blockExt *BlockExt) 
 		extMap := make(map[common.Hash]*BlockExt)
 		extMap[hash] = blockExt
 		bm.blocks[number] = extMap
-		if blockExt.prepareVotes.IsMaj23() {
-			bm.removeFork(number, hash)
-		}
+		bm.removeFork(number)
+
 		if blockExt.block != nil {
 			bm.fixChain(blockExt)
 		}
 	}
 }
 
-func (bm *BlockExtMap) removeFork(number uint64, hash common.Hash) {
+func (bm *BlockExtMap) removeFork(number uint64) {
+	hash := common.Hash{}
 	if extMap, ok := bm.blocks[number]; ok {
+		//find confirmed
 		for k, v := range extMap {
 			if k != hash {
 				if v.prepareVotes.IsMaj23() {
-					panic(fmt.Sprintf("forked block has 2f+1 prepare votes:%s", k.TerminalString()))
+
+					if hash != (common.Hash{}) {
+						panic(fmt.Sprintf("forked block has 2f+1 prepare votes:%s", k.TerminalString()))
+					}
+					hash = k
+				}
+			}
+		}
+		//delete others
+		if hash != (common.Hash{}) {
+			for k, v := range extMap {
+				if k == hash {
+					continue
 				}
 				if v.parent != nil {
 					delete(v.parent.children, k)

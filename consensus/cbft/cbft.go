@@ -59,8 +59,8 @@ var (
 	errInvalidPrepareVotes         = errors.New("invalid prepare prepareVotes")
 	errInvalidatorCandidateAddress = errors.New("invalid address")
 	errDuplicationConsensusMsg     = errors.New("duplication message")
+	errInvalidViewChange           = errors.New("invalid viewChange")
 
-	//errInvalidVrfProve = errors.New("Invalid vrf prove")
 	extraSeal = 65
 	//windowSize         = 10
 
@@ -397,10 +397,10 @@ func (cbft *Cbft) handleMsg(info *MsgInfo) {
 	if !cbft.isRunning() {
 		switch msg.(type) {
 		case *prepareBlock,
-		*prepareBlockHash,
-		*prepareVote,
-		*viewChange,
-		*viewChangeVote:
+			*prepareBlockHash,
+			*prepareVote,
+			*viewChange,
+			*viewChangeVote:
 			cbft.log.Debug("Cbft is not running, discard consensus message")
 			return
 		}
@@ -998,6 +998,12 @@ func (cbft *Cbft) OnSendViewChange() {
 		cbft.log.Error("New view change failed", "err", err)
 		return
 	}
+
+	if cbft.checkViewChangeRealTimeout(view.ProposalIndex) {
+		cbft.log.Warn("View change really timeout, stopped change view", "view", view, "now", common.Millis(time.Now()))
+		return
+	}
+
 	cbft.log.Info("Send new view", "nodeID", cbft.config.NodeID, "view", view.String(), "msgHash", view.MsgHash().TerminalString())
 	cbft.bp.ViewChangeBP().SendViewChange(context.TODO(), view, cbft)
 
@@ -1075,7 +1081,7 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 	resp.Signature.SetBytes(sign)
 	cbft.viewChangeResp = resp
 	cbft.log.Info("Response viewChangeVote", "viewChangeResp", resp, "msgHash", resp.MsgHash())
-	time.AfterFunc(time.Duration(cbft.config.Period)*time.Second, func() {
+	time.AfterFunc(time.Duration(cbft.config.Period)*2*time.Second, func() {
 		cbft.viewChangeVoteTimeoutCh <- resp
 	})
 	cbft.agreeViewChangeProcess(view, resp)
@@ -1699,6 +1705,22 @@ func (cbft *Cbft) CalcNextBlockTime(timePoint int64) (time.Time, error) {
 
 }
 
+func (cbft *Cbft) checkViewChangeRealTimeout(proposalIndex uint32) bool {
+	if cbft.getValidators().Len() == 1 {
+		return false
+	}
+
+	timepoint := common.Millis(time.Now())
+	startEpoch := cbft.startTimeOfEpoch * 1000
+	durationPerNode := cbft.config.Duration * 1000
+	durationPerTurn := durationPerNode * int64(cbft.getValidators().Len())
+
+	min := int64(proposalIndex) * durationPerNode
+	cur := (timepoint - startEpoch) % durationPerTurn
+	cbft.log.Debug("Check view change real timeout", "min", min, "cur", cur, "timepoint", timepoint, "startEpoch", startEpoch)
+	return (cur - min) > int64(3*cbft.config.Period*1000)
+}
+
 // ConsensusNodes returns all consensus nodes.
 func (cbft *Cbft) ConsensusNodes() ([]discover.NodeID, error) {
 	cbft.log.Trace(fmt.Sprintf("dposNodeCount:%d", cbft.getValidators().Len()))
@@ -1762,7 +1784,7 @@ func (cbft *Cbft) Prepare(chain consensus.ChainReader, header *types.Header) err
 // rewards given, and returns the final block.
 func (cbft *Cbft) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, receipts []*types.Receipt) (*types.Block, error) {
 	cbft.log.Debug("finalize block", "hash", header.Hash(), "number", header.Number.Uint64(), "txs", len(txs), "receipts", len(receipts))
-	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
+	header.Root = state.IntermediateRoot(true)
 	return types.NewBlock(header, txs, receipts), nil
 }
 
