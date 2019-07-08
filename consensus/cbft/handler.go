@@ -24,16 +24,16 @@ const (
 
 type MsgPackage struct {
 	peerID string
-	msg    MessageWrapper
+	msg    *MessageWrapper
 	mode   uint64 // forwarding mode.
 }
 
 type handler interface {
 	Start()
-	SendAllConsensusPeer(msg MessageWrapper)
-	Send(peerID discover.NodeID, msg MessageWrapper)
-	SendBroadcast(msg MessageWrapper)
-	SendPartBroadcast(msg MessageWrapper)
+	SendAllConsensusPeer(msg *MessageWrapper)
+	Send(peerID discover.NodeID, msg *MessageWrapper)
+	SendBroadcast(msg *MessageWrapper)
+	SendPartBroadcast(msg *MessageWrapper)
 	Protocols() []p2p.Protocol
 	PeerSet() *peerSet
 	GetPeer(peerID string) (*peer, error)
@@ -110,7 +110,7 @@ func (h *baseHandler) GetPeer(peerID string) (*peer, error) {
 	return h.peers.Get(peerID)
 }
 
-func (h *baseHandler) SendAllConsensusPeer(msg MessageWrapper) {
+func (h *baseHandler) SendAllConsensusPeer(msg *MessageWrapper) {
 	log.Debug("SendAllConsensusPeer Invoke", "hash", msg.MsgHash(), "type", reflect.TypeOf(msg), "BHash", msg.BHash().TerminalString())
 	select {
 	case h.sendQueue <- &MsgPackage{
@@ -121,7 +121,7 @@ func (h *baseHandler) SendAllConsensusPeer(msg MessageWrapper) {
 	}
 }
 
-func (h *baseHandler) Send(peerID discover.NodeID, msg MessageWrapper) {
+func (h *baseHandler) Send(peerID discover.NodeID, msg *MessageWrapper) {
 
 	select {
 	case h.sendQueue <- &MsgPackage{
@@ -131,7 +131,7 @@ func (h *baseHandler) Send(peerID discover.NodeID, msg MessageWrapper) {
 	}
 }
 
-func (h *baseHandler) SendBroadcast(msg MessageWrapper) {
+func (h *baseHandler) SendBroadcast(msg *MessageWrapper) {
 	msgPkg := &MsgPackage{
 		msg:  msg,
 		mode: MixMode,
@@ -143,7 +143,7 @@ func (h *baseHandler) SendBroadcast(msg MessageWrapper) {
 	}
 }
 
-func (h *baseHandler) SendPartBroadcast(msg MessageWrapper) {
+func (h *baseHandler) SendPartBroadcast(msg *MessageWrapper) {
 	msgPkg := &MsgPackage{
 		msg:  msg,
 		mode: PartMode,
@@ -237,7 +237,7 @@ func (h *baseHandler) handleMsg(p *peer) error {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
 		msgWrapper := NewMessageWrapper(&request)
-		p.MarkMessageHash((&msgWrapper).MsgHash())
+		p.MarkMessageHash(msgWrapper.MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    msgWrapper,
 			PeerID: p.ID(),
@@ -250,7 +250,7 @@ func (h *baseHandler) handleMsg(p *peer) error {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
 		msgWrapper := NewMessageWrapper(&request)
-		p.MarkMessageHash((&msgWrapper).MsgHash())
+		p.MarkMessageHash(msgWrapper.MsgHash())
 		request.Block.ReceivedAt = msg.ReceivedAt
 		request.Block.ReceivedFrom = p
 
@@ -269,7 +269,7 @@ func (h *baseHandler) handleMsg(p *peer) error {
 		if h.cbft.isForwarded(p.ID(), msgWrapper.MsgHash()) {
 			return nil
 		}
-		p.MarkMessageHash((&msgWrapper).MsgHash())
+		p.MarkMessageHash(msgWrapper.MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    msgWrapper,
 			PeerID: p.ID(),
@@ -285,7 +285,7 @@ func (h *baseHandler) handleMsg(p *peer) error {
 		if h.cbft.isForwarded(p.ID(), msgWrapper.MsgHash()) {
 			return nil
 		}
-		p.MarkMessageHash((&msgWrapper).MsgHash())
+		p.MarkMessageHash(msgWrapper.MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    msgWrapper,
 			PeerID: p.ID(),
@@ -301,7 +301,7 @@ func (h *baseHandler) handleMsg(p *peer) error {
 		if h.cbft.isForwarded(p.ID(), msgWrapper.MsgHash()) {
 			return nil
 		}
-		p.MarkMessageHash((&msgWrapper).MsgHash())
+		p.MarkMessageHash(msgWrapper.MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    msgWrapper,
 			PeerID: p.ID(),
@@ -317,7 +317,7 @@ func (h *baseHandler) handleMsg(p *peer) error {
 		if h.cbft.isForwarded(p.ID(), msgWrapper.MsgHash()) {
 			return nil
 		}
-		p.MarkMessageHash((&msgWrapper).MsgHash())
+		p.MarkMessageHash(msgWrapper.MsgHash())
 		h.cbft.ReceivePeerMsg(&MsgInfo{
 			Msg:    msgWrapper,
 			PeerID: p.ID(),

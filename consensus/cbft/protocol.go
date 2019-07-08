@@ -74,14 +74,14 @@ type ConsensusMsg interface {
 	Sign() []byte
 }
 
-type Message01 interface {
+type Message interface {
 	String() string
 	MsgHash() common.Hash
 	BHash() common.Hash
 }
 
 type MessageWrapper struct {
-	Message Message01
+	Message Message
 	MHash common.Hash
 	Hash common.Hash
 }
@@ -98,8 +98,8 @@ func (w *MessageWrapper) BHash() common.Hash {
 	return w.BHash()
 }
 
-func NewMessageWrapper(msg Message01) MessageWrapper {
-	return MessageWrapper{
+func NewMessageWrapper(msg Message) *MessageWrapper {
+	return &MessageWrapper{
 		Message: msg,
 		MHash: msg.MsgHash(),
 		Hash: msg.BHash(),
@@ -107,7 +107,7 @@ func NewMessageWrapper(msg Message01) MessageWrapper {
 }
 
 type MsgInfo struct {
-	Msg    MessageWrapper
+	Msg    *MessageWrapper
 	PeerID discover.NodeID
 }
 

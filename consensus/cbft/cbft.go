@@ -2350,7 +2350,7 @@ func (cbft *Cbft) updateValidator() {
 	}
 }
 
-func (cbft *Cbft) needBroadcast(nodeId discover.NodeID, msg MessageWrapper) bool {
+func (cbft *Cbft) needBroadcast(nodeId discover.NodeID, msg *MessageWrapper) bool {
 	peers := cbft.handler.PeerSet().Peers()
 	if len(peers) == 0 {
 		return false
