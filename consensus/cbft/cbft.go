@@ -312,7 +312,7 @@ func (cbft *Cbft) scheduleHighestPrepareBlock() {
 	for {
 		select {
 		case <-schedule.C:
-			cbft.handler.SendPartBroadcast(&getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
+			cbft.handler.SendPartBroadcast(NewMessageWrapper(&getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1}))
 		}
 	}
 }
@@ -372,7 +372,7 @@ func (cbft *Cbft) handleMsg(info *MsgInfo) {
 		fmt.Sprintf("%T", info.Msg))
 
 	if !cbft.isRunning() {
-		switch msg.(type) {
+		switch msg.Message.(type) {
 		case *prepareBlock,
 			*prepareBlockHash,
 			*prepareVote,
@@ -383,7 +383,7 @@ func (cbft *Cbft) handleMsg(info *MsgInfo) {
 		}
 	}
 	isWriteWal := true
-	switch msg := msg.(type) {
+	switch msg := msg.Message.(type) {
 	case *prepareBlock:
 		err = cbft.OnNewPrepareBlock(peerID, msg, true)
 	case *prepareVote:
@@ -558,19 +558,19 @@ func (cbft *Cbft) OnConfirmedPrepareBlock(peerID discover.NodeID, pb *confirmedP
 	cbft.log.Debug("Received confirmed prepareBlock ", "peer", peerID, "confirmedPrepareBlock", pb.String())
 	ext := cbft.blockExtMap.findBlock(pb.Hash, pb.Number)
 	if ext == nil || ext.block == nil {
-		cbft.handler.Send(peerID, &getPrepareBlock{Hash: pb.Hash, Number: pb.Number})
+		cbft.handler.Send(peerID, NewMessageWrapper(&getPrepareBlock{Hash: pb.Hash, Number: pb.Number}))
 	}
 	if ext != nil && ext.prepareVotes.Len() < cbft.getThreshold() {
 		sub := pb.VoteBits.Sub(ext.prepareVotes.voteBits)
 		if !sub.IsEmpty() {
-			cbft.handler.Send(peerID, &getPrepareVote{Hash: pb.Hash, Number: pb.Number, VoteBits: sub})
+			cbft.handler.Send(peerID, NewMessageWrapper(&getPrepareVote{Hash: pb.Hash, Number: pb.Number, VoteBits: sub}))
 		}
 	}
 
 	cbft.syncMissingBlock(peerID, pb.Number)
 
-	if cbft.needBroadcast(peerID, pb) {
-		go cbft.handler.SendBroadcast(pb)
+	if cbft.needBroadcast(peerID, NewMessageWrapper(pb)) {
+		go cbft.handler.SendBroadcast(NewMessageWrapper(pb))
 	}
 
 	return nil
@@ -579,12 +579,12 @@ func (cbft *Cbft) OnConfirmedPrepareBlock(peerID discover.NodeID, pb *confirmedP
 func (cbft *Cbft) syncMissingBlock(peerID discover.NodeID, highest uint64) {
 	hs := cbft.blockExtMap.GetHasVoteWithoutBlock(highest)
 	for _, h := range hs {
-		cbft.handler.Send(peerID, &getPrepareBlock{Hash: h.hash, Number: h.number})
+		cbft.handler.Send(peerID, NewMessageWrapper(&getPrepareBlock{Hash: h.hash, Number: h.number}))
 	}
 
 	hs = cbft.blockExtMap.GetWithoutTwoThirdVotes(highest)
 	for _, h := range hs {
-		cbft.handler.Send(peerID, &getPrepareVote{Hash: h.hash, Number: h.number, VoteBits: h.bits})
+		cbft.handler.Send(peerID, NewMessageWrapper(&getPrepareVote{Hash: h.hash, Number: h.number, VoteBits: h.bits}))
 	}
 }
 func (cbft *Cbft) OnGetPrepareBlock(peerID discover.NodeID, g *getPrepareBlock) error {
@@ -592,7 +592,7 @@ func (cbft *Cbft) OnGetPrepareBlock(peerID discover.NodeID, g *getPrepareBlock) 
 	if ext != nil {
 		pb, err := ext.PrepareBlock()
 		if err == nil {
-			cbft.handler.Send(peerID, pb)
+			cbft.handler.Send(peerID, NewMessageWrapper(pb))
 			cbft.log.Debug("Send Block", "peer", peerID, "hash", g.Hash, "number", g.Number, "msgHash", pb.MsgHash().TerminalString())
 		}
 	}
@@ -623,7 +623,7 @@ func (cbft *Cbft) OnGetPrepareVote(peerID discover.NodeID, pv *getPrepareVote) e
 		}
 	}
 	if len(votes) != 0 {
-		cbft.handler.Send(peerID, &prepareVotes{Hash: pv.Hash, Number: pv.Number, Votes: votes})
+		cbft.handler.Send(peerID, NewMessageWrapper(&prepareVotes{Hash: pv.Hash, Number: pv.Number, Votes: votes}))
 		cbft.log.Debug("Send PrepareVotes", "peer", peerID, "hash", pv.Hash, "number", pv.Number)
 	}
 	return nil
@@ -666,11 +666,11 @@ func (cbft *Cbft) OnGetHighestPrepareBlock(peerID discover.NodeID, msg *getHighe
 		}
 	}
 	cbft.log.Debug("Send highestPrepareBlock")
-	cbft.handler.Send(peerID, &highestPrepareBlock{
+	cbft.handler.Send(peerID, NewMessageWrapper(&highestPrepareBlock{
 		CommitedBlock:    commitedBlock,
 		UnconfirmedBlock: unconfirmedBlock,
 		Votes:            votes,
-	})
+	}))
 	return nil
 }
 
@@ -742,7 +742,7 @@ func (cbft *Cbft) OnViewChangeVoteTimeout(view *viewChangeVote) {
 			cbft.handleCache()
 			cbft.resetViewChange()
 			cbft.needPending = true
-			cbft.handler.SendPartBroadcast(&getHighestPrepareBlock{cbft.getHighestConfirmed().number})
+			cbft.handler.SendPartBroadcast(NewMessageWrapper(&getHighestPrepareBlock{cbft.getHighestConfirmed().number}))
 		}
 	}
 
@@ -754,12 +754,12 @@ func (cbft *Cbft) OnPrepareBlockHash(peerID discover.NodeID, msg *prepareBlockHa
 		"BlockHash", msg.Hash.TerminalString(), "Number", msg.Number)
 	// Prerequisite: Nodes with PrepareBlock data can forward Hash
 	if cbft.blockExtMap.findBlock(msg.Hash, msg.Number) == nil {
-		cbft.handler.Send(peerID, &getPrepareBlock{Hash: msg.Hash, Number: msg.Number})
+		cbft.handler.Send(peerID, NewMessageWrapper(&getPrepareBlock{Hash: msg.Hash, Number: msg.Number}))
 	}
 
 	// then: to forward msg
-	if ok := cbft.needBroadcast(peerID, msg); ok {
-		go cbft.handler.SendBroadcast(msg)
+	if ok := cbft.needBroadcast(peerID, NewMessageWrapper(msg)); ok {
+		go cbft.handler.SendBroadcast(NewMessageWrapper(msg))
 	}
 
 	return nil
@@ -777,10 +777,10 @@ func (cbft *Cbft) OnGetLatestStatus(peerID discover.NodeID, msg *getLatestStatus
 			}
 			p.SetConfirmedHighestBn(new(big.Int).SetUint64(msg.Highest))
 			cbft.log.Debug("The current confirmed block height is lower than the specified block height", "current", curConfirmedNum, "specified", msg.Highest)
-			cbft.handler.Send(peerID, &getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
+			cbft.handler.Send(peerID, NewMessageWrapper(&getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1}))
 		} else {
 			cbft.log.Debug("Current confirmed highest larger and make reply highestConfirmedStatus msg", "highest", msg.Highest, "currentNum", curConfirmedNum)
-			cbft.handler.Send(peerID, &latestStatus{Highest: curConfirmedNum, Type: msg.Type})
+			cbft.handler.Send(peerID, NewMessageWrapper(&latestStatus{Highest: curConfirmedNum, Type: msg.Type}))
 		}
 	}
 	if msg.Type == HIGHEST_LOGIC_BLOCK {
@@ -795,7 +795,7 @@ func (cbft *Cbft) OnGetLatestStatus(peerID discover.NodeID, msg *getLatestStatus
 			cbft.syncMissingBlock(peerID, msg.Highest)
 		} else {
 			cbft.log.Debug("Current logic highest larger and make reply highestConfirmedStatus msg", "highest", msg.Highest, "currentNum", curLogicNum)
-			cbft.handler.Send(peerID, &latestStatus{Highest: curConfirmedNum, Type: msg.Type})
+			cbft.handler.Send(peerID, NewMessageWrapper(&latestStatus{Highest: curConfirmedNum, Type: msg.Type}))
 		}
 	}
 	return nil
@@ -814,7 +814,7 @@ func (cbft *Cbft) OnLatestStatus(peerID discover.NodeID, msg *latestStatus) erro
 			}
 			p.SetConfirmedHighestBn(new(big.Int).SetUint64(msg.Highest))
 			cbft.log.Debug("The current confirmed block height is lower than the specified block height and getPrepareBlock")
-			cbft.handler.Send(peerID, &getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
+			cbft.handler.Send(peerID, NewMessageWrapper(&getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1}))
 		}
 	case HIGHEST_LOGIC_BLOCK:
 		if curLogicNum < msg.Highest {
@@ -1008,10 +1008,10 @@ func (cbft *Cbft) OnSendViewChange() {
 
 	// write new viewChange info to wal journal
 	cbft.wal.WriteSync(&MsgInfo{
-		Msg:    &sendViewChange{ViewChange: view, Master: true},
+		Msg:    NewMessageWrapper(&sendViewChange{ViewChange: view, Master: true}),
 		PeerID: cbft.config.NodeID,
 	})
-	cbft.handler.SendAllConsensusPeer(view)
+	cbft.handler.SendAllConsensusPeer(NewMessageWrapper(view))
 
 	// gauage
 	blockHighNumConfirmedGauage.Update(int64(cbft.getHighestConfirmed().number))
@@ -1034,7 +1034,7 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 
 	if view != nil {
 		// priority forwarding
-		cbft.handler.SendAllConsensusPeer(view)
+		cbft.handler.SendAllConsensusPeer(NewMessageWrapper(view))
 	}
 
 	bpCtx := context.WithValue(context.Background(), "peer", peerID)
@@ -1046,7 +1046,7 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 			} else {
 				cbft.log.Warn(fmt.Sprintf("Local is too slower, need to sync block to %s", peerID.TerminalString()))
 
-				cbft.handler.Send(peerID, &getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
+				cbft.handler.Send(peerID, NewMessageWrapper(&getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1}))
 			}
 		}
 
@@ -1090,7 +1090,7 @@ func (cbft *Cbft) OnViewChange(peerID discover.NodeID, view *viewChange) error {
 	//cbft.viewChangeVotes[resp.ValidatorAddr] = resp
 	cbft.bp.InternalBP().SwitchView(bpCtx, view, cbft)
 	cbft.bp.ViewChangeBP().SendViewChangeVote(bpCtx, resp, cbft)
-	cbft.handler.SendAllConsensusPeer(resp)
+	cbft.handler.SendAllConsensusPeer(NewMessageWrapper(resp))
 	return nil
 }
 
@@ -1194,7 +1194,7 @@ func (cbft *Cbft) OnNewPrepareBlock(nodeId discover.NodeID, request *prepareBloc
 		if cbft.getHighestLogical().number < request.View.BaseBlockNum ||
 			cbft.blockExtMap.findBlock(request.View.BaseBlockHash, request.View.BaseBlockNum) == nil {
 			cbft.bp.PrepareBP().InvalidBlock(bpCtx, request, errNotFoundViewBlock, cbft)
-			cbft.handler.Send(nodeId, &getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1})
+			cbft.handler.Send(nodeId, NewMessageWrapper(&getHighestPrepareBlock{Lowest: cbft.getRootIrreversible().number + 1}))
 			cbft.log.Error(fmt.Sprintf("View Block is not found, hash:%s, number:%d, logical:%d", request.View.BaseBlockHash.TerminalString(), request.View.BaseBlockNum, cbft.getHighestLogical().number))
 			return errNotFoundViewBlock
 		}
@@ -1233,7 +1233,7 @@ func (cbft *Cbft) OnNewPrepareBlock(nodeId discover.NodeID, request *prepareBloc
 				cbft.bp.ViewChangeBP().InvalidViewChangeBlock(bpCtx, cbft.viewChange, cbft)
 				log.Error("ViewChange block find error", "BaseBlockHash", cbft.viewChange.BaseBlockHash,
 					"BaseBlockNum", cbft.viewChange.BaseBlockNum, "blockMap", cbft.blockExtMap.BlockString())
-				cbft.handler.Send(nodeId, &getPrepareBlock{Hash: cbft.viewChange.BaseBlockHash, Number: cbft.viewChange.BaseBlockNum})
+				cbft.handler.Send(nodeId, NewMessageWrapper(&getPrepareBlock{Hash: cbft.viewChange.BaseBlockHash, Number: cbft.viewChange.BaseBlockNum}))
 				//panic("Find nil block")
 			} else {
 				newHeader = viewBlock.block.Header()
@@ -1264,8 +1264,8 @@ func (cbft *Cbft) OnNewPrepareBlock(nodeId discover.NodeID, request *prepareBloc
 		}
 
 		// if accept the block then forward the message
-		if propagation && cbft.needBroadcast(nodeId, request) {
-			go cbft.handler.SendBroadcast(&prepareBlockHash{Hash: request.Block.Hash(), Number: request.Block.NumberU64()})
+		if propagation && cbft.needBroadcast(nodeId, NewMessageWrapper(request)) {
+			go cbft.handler.SendBroadcast(NewMessageWrapper(&prepareBlockHash{Hash: request.Block.Hash(), Number: request.Block.NumberU64()}))
 		}
 		consensusJoinCounter.Inc(1)
 
@@ -1274,8 +1274,8 @@ func (cbft *Cbft) OnNewPrepareBlock(nodeId discover.NodeID, request *prepareBloc
 		cbft.bp.PrepareBP().CacheBlock(bpCtx, request, cbft)
 		cbft.log.Info("Cache block", "hash", ext.block.Hash(), "number", ext.block.NumberU64())
 		// if cache the block then forward the message
-		if propagation && cbft.needBroadcast(nodeId, request) {
-			go cbft.handler.SendBroadcast(&prepareBlockHash{Hash: request.Block.Hash(), Number: request.Block.NumberU64()})
+		if propagation && cbft.needBroadcast(nodeId, NewMessageWrapper(request)) {
+			go cbft.handler.SendBroadcast(NewMessageWrapper(&prepareBlockHash{Hash: request.Block.Hash(), Number: request.Block.NumberU64()}))
 		}
 	case Discard:
 		cbft.bp.PrepareBP().DiscardBlock(bpCtx, request, cbft)
@@ -1323,7 +1323,7 @@ func (cbft *Cbft) prepareVoteReceiver(peerID discover.NodeID, vote *prepareVote)
 		"state", cbft.blockState())
 	ext := cbft.blockExtMap.findBlock(vote.Hash, vote.Number)
 	if ext == nil {
-		cbft.handler.Send(peerID, &getPrepareBlock{Hash: vote.Hash, Number: vote.Number})
+		cbft.handler.Send(peerID, NewMessageWrapper(&getPrepareBlock{Hash: vote.Hash, Number: vote.Number}))
 		cbft.log.Warn("Have not received the corresponding block", "hash", vote.Hash, "number", vote.Number)
 		//the block is nil
 		ext = NewBlockExtByPeer(nil, vote.Number, cbft.nodeLength())
@@ -1351,7 +1351,7 @@ func (cbft *Cbft) prepareVoteReceiver(peerID discover.NodeID, vote *prepareVote)
 		if !hadSend {
 			cbft.log.Debug("Send Confirmed Block", "hash", ext.block.Hash(), "number", ext.block.NumberU64())
 			cbft.bp.InternalBP().NewHighestConfirmedBlock(context.TODO(), ext, cbft)
-			cbft.handler.SendAllConsensusPeer(&confirmedPrepareBlock{Hash: ext.block.Hash(), Number: ext.block.NumberU64(), VoteBits: ext.prepareVotes.voteBits})
+			cbft.handler.SendAllConsensusPeer(NewMessageWrapper(&confirmedPrepareBlock{Hash: ext.block.Hash(), Number: ext.block.NumberU64(), VoteBits: ext.prepareVotes.voteBits}))
 		}
 	}
 }
@@ -1386,7 +1386,7 @@ func (cbft *Cbft) OnExecutedBlock(bs *ExecuteBlockStatus) {
 					cbft.bp.InternalBP().NewHighestConfirmedBlock(context.TODO(), highest, cbft)
 				}
 				cbft.log.Debug("Send Confirmed Block", "hash", bs.block.block.Hash(), "number", bs.block.block.NumberU64())
-				cbft.handler.SendAllConsensusPeer(&confirmedPrepareBlock{Hash: bs.block.block.Hash(), Number: bs.block.block.NumberU64(), VoteBits: bs.block.prepareVotes.voteBits})
+				cbft.handler.SendAllConsensusPeer(NewMessageWrapper(&confirmedPrepareBlock{Hash: bs.block.block.Hash(), Number: bs.block.block.NumberU64(), VoteBits: bs.block.prepareVotes.voteBits}))
 				blockConfirmedMeter.Mark(1)
 			}
 
@@ -1430,7 +1430,7 @@ func (cbft *Cbft) sendPrepareVote(ext *BlockExt) {
 				ext.prepareVotes.Add(pv)
 				cbft.blockExtMap.Add(pv.Hash, pv.Number, ext)
 				cbft.log.Debug("Broadcast prepare vote", "vote", pv.String())
-				cbft.handler.SendAllConsensusPeer(pv)
+				cbft.handler.SendAllConsensusPeer(NewMessageWrapper(pv))
 				cbft.bp.PrepareBP().SendPrepareVote(context.TODO(), pv, cbft)
 				cbft.SetLocalHighestPrepareNum(pv.Number)
 			}
@@ -1829,7 +1829,7 @@ func (cbft *Cbft) update() {
 					"logical", cbft.getHighestLogical().number,
 					"confirm", cbft.getHighestConfirmed().number,
 					"root", cbft.getRootIrreversible().number)
-				cbft.handler.SendAllConsensusPeer(&getHighestPrepareBlock{Lowest: cbft.getHighestConfirmed().number})
+				cbft.handler.SendAllConsensusPeer(NewMessageWrapper(&getHighestPrepareBlock{Lowest: cbft.getHighestConfirmed().number}))
 				atomic.StoreInt32(&cbft.running, 1)
 				// stop immediately and ignore all further pending events
 				return
@@ -1886,9 +1886,9 @@ func (cbft *Cbft) OnPrepareVote(peerID discover.NodeID, vote *prepareVote, propa
 	cbft.log.Trace("Processing vote end", "hash", vote.Hash, "number", vote.Number)
 
 	// rule:
-	if propagation && cbft.needBroadcast(peerID, vote) {
+	if propagation && cbft.needBroadcast(peerID, NewMessageWrapper(vote)) {
 		cbft.log.Debug("Broadcast the message of prepareVote", "FromPeerId", peerID.String())
-		go cbft.handler.SendBroadcast(vote)
+		go cbft.handler.SendBroadcast(NewMessageWrapper(vote))
 	}
 
 	return nil
@@ -2350,7 +2350,7 @@ func (cbft *Cbft) updateValidator() {
 	}
 }
 
-func (cbft *Cbft) needBroadcast(nodeId discover.NodeID, msg Message) bool {
+func (cbft *Cbft) needBroadcast(nodeId discover.NodeID, msg MessageWrapper) bool {
 	peers := cbft.handler.PeerSet().Peers()
 	if len(peers) == 0 {
 		return false
@@ -2375,7 +2375,7 @@ func (cbft *Cbft) AddJournal(info *MsgInfo) {
 	msg, peerID := info.Msg, info.PeerID
 	cbft.log.Debug("Load journal message from wal", "peer", peerID.TerminalString(), "msgType", reflect.TypeOf(msg))
 
-	switch msg := msg.(type) {
+	switch msg := msg.Message.(type) {
 	case *sendPrepareBlock:
 		log.Debug("Load journal message from wal", "msgType", reflect.TypeOf(msg), "sendPrepareBlock", msg.PrepareBlock.String())
 		blockExt := NewBlockExtByPrepareBlock(msg.PrepareBlock, cbft.nodeLength())
@@ -2414,14 +2414,14 @@ func (cbft *Cbft) AddJournal(info *MsgInfo) {
 	}
 }
 
-func (cbft *Cbft) isForwarded(nodeId discover.NodeID, msg Message) bool {
+func (cbft *Cbft) isForwarded(nodeId discover.NodeID, msgHash common.Hash) bool {
 	peers := cbft.handler.PeerSet().Peers()
 	// message of prepareBlock cannot be filtered
 	for _, peer := range peers {
 		if peer.id == fmt.Sprintf("%x", nodeId.Bytes()[:8]) {
 			continue
 		}
-		if peer.knownMessageHash.Contains(msg.MsgHash()) {
+		if peer.knownMessageHash.Contains(msgHash) {
 			return true
 		}
 	}

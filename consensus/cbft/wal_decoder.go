@@ -162,7 +162,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessagePrepareBlock
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -173,7 +173,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessagePrepareVote
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -184,7 +184,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessageViewChange
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -195,7 +195,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessageViewChangeVote
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -205,7 +205,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessageConfirmedPrepareBlock
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -215,7 +215,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessageGetPrepareVote
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -225,7 +225,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessagePrepareVotes
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -235,7 +235,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessageGetPrepareBlock
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -245,7 +245,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessageGetHighestPrepareBlock
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -255,7 +255,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessageHighestPrepareBlock
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -265,7 +265,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessageCbftStatusData
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -275,7 +275,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessagePrepareBlockHash
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -285,7 +285,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessageSendPrepareBlock
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -295,7 +295,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessageSendViewChange
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {
@@ -305,7 +305,7 @@ func WALDecode(pack []byte, msgType uint16) (*MsgInfo, error) {
 		var j JournalMessageConfirmedViewChange
 		if err := rlp.DecodeBytes(pack, &j); err == nil {
 			return &MsgInfo{
-				Msg:    j.Data.Msg,
+				Msg:    NewMessageWrapper(j.Data.Msg),
 				PeerID: j.Data.PeerID,
 			}, nil
 		} else {

@@ -534,7 +534,7 @@ func (cbft *Cbft) processing(votes ProcessingVote) {
 	for _, v := range votes {
 		for k, v := range v {
 			cbft.peerMsgCh <- &MsgInfo{
-				Msg:    v,
+				Msg:    NewMessageWrapper(v),
 				PeerID: k,
 			}
 		}
@@ -565,12 +565,12 @@ func (cbft *Cbft) pendingProcess() {
 			ext.prepareVotes.Add(pv)
 			cbft.blockExtMap.Add(pv.Hash, pv.Number, ext)
 		}
-		cbft.handler.SendAllConsensusPeer(pv)
+		cbft.handler.SendAllConsensusPeer(NewMessageWrapper(pv))
 	}
 
 	for _, v := range pendingBlock {
 		cbft.log.Debug("Handle cache pending votes", "hash", v.Block.Hash(), "number", v.Block.Number())
-		cbft.handler.SendAllConsensusPeer(v)
+		cbft.handler.SendAllConsensusPeer(NewMessageWrapper(v))
 	}
 }
 
@@ -584,7 +584,7 @@ func (cbft *Cbft) newViewChange() (*viewChange, error) {
 	ext := cbft.getHighestConfirmed()
 	if ext.number < cbft.localHighestPrepareVoteNum {
 		//todo ask prepare vote to other, need optimize
-		cbft.handler.SendPartBroadcast(&getHighestPrepareBlock{Lowest: ext.number})
+		cbft.handler.SendPartBroadcast(NewMessageWrapper(&getHighestPrepareBlock{Lowest: ext.number}))
 
 		return nil, errInvalidConfirmNumTooLow
 	}
@@ -694,8 +694,8 @@ func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote)
 	log.Debug("Receive view change vote", "peer", peerID, "vote", vote.String(), "view", cbft.viewChange.String(), "msgHash", vote.MsgHash())
 	bpCtx := context.WithValue(context.Background(), "peer", peerID)
 	cbft.bp.ViewChangeBP().ReceiveViewChangeVote(bpCtx, vote, cbft)
-	if cbft.needBroadcast(peerID, vote) {
-		go cbft.handler.SendBroadcast(vote)
+	if cbft.needBroadcast(peerID, NewMessageWrapper(vote)) {
+		go cbft.handler.SendBroadcast(NewMessageWrapper(vote))
 	}
 	//cbft.mux.Lock()
 	//defer cbft.mux.Unlock()
@@ -749,7 +749,7 @@ func (cbft *Cbft) OnViewChangeVote(peerID discover.NodeID, vote *viewChangeVote)
 			})
 			// write confirmed viewChange info to wal journal
 			cbft.wal.WriteSync(&MsgInfo{
-				Msg:    &confirmedViewChange{ViewChange: cbft.viewChange, ViewChangeResp: cbft.viewChangeResp, ViewChangeVotes: cbft.viewChangeVotes.Flatten(), Master: cbft.master},
+				Msg:    NewMessageWrapper(&confirmedViewChange{ViewChange: cbft.viewChange, ViewChangeResp: cbft.viewChangeResp, ViewChangeVotes: cbft.viewChangeVotes.Flatten(), Master: cbft.master}),
 				PeerID: cbft.config.NodeID,
 			})
 		}
@@ -825,7 +825,7 @@ func (cbft *Cbft) broadcastBlock(ext *BlockExt) {
 
 	// write seal PrepareBlock info to wal journal
 	cbft.wal.WriteSync(&MsgInfo{
-		Msg:    &sendPrepareBlock{PrepareBlock: p},
+		Msg:    NewMessageWrapper(&sendPrepareBlock{PrepareBlock: p}),
 		PeerID: cbft.config.NodeID,
 	})
 	if cbft.viewChange != nil && !cbft.agreeViewChange() && cbft.viewChange.BaseBlockNum < ext.block.NumberU64() {
@@ -835,7 +835,7 @@ func (cbft *Cbft) broadcastBlock(ext *BlockExt) {
 	} else {
 		log.Debug("Send block", "nodeID", cbft.config.NodeID, "number", ext.block.Number(), "hash", ext.block.Hash())
 		cbft.bp.PrepareBP().SendBlock(context.TODO(), p, cbft)
-		cbft.handler.SendAllConsensusPeer(p)
+		cbft.handler.SendAllConsensusPeer(NewMessageWrapper(p))
 	}
 }
 
