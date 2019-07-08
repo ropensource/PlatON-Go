@@ -95,7 +95,7 @@ func (w *MessageWrapper) String() string {
 }
 
 func (w *MessageWrapper) BHash() common.Hash {
-	return w.BHash()
+	return w.Hash
 }
 
 func NewMessageWrapper(msg Message) *MessageWrapper {

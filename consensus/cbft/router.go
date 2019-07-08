@@ -35,7 +35,7 @@ func NewRouter(cbft *Cbft, hd handler) *router {
 // pass the message by gossip protocol.
 func (r *router) gossip(m *MsgPackage) {
 	// todo: need to check
-	msgType := MessageType(m.msg)
+	msgType := MessageType(m.msg.Message)
 	msgHash := m.msg.MsgHash()
 
 	switch msgType {
