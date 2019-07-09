@@ -42,7 +42,7 @@ func (r *router) gossip(m *MsgPackage) {
 	case ConfirmedPrepareBlockMsg, PrepareBlockHashMsg:
 		// check the message is repeated
 		if r.repeatedCheck(m.peerID, msgHash) {
-			log.Debug("The message is repeated, not to forward again", "msgType", reflect.TypeOf(m.msg), "msgHash", msgHash.TerminalString())
+			log.Debug("The message is repeated, not to forward again", "msgType", reflect.TypeOf(m.msg.Message), "msgHash", msgHash.TerminalString())
 			return
 		}
 	}
@@ -59,11 +59,11 @@ func (r *router) gossip(m *MsgPackage) {
 		peers = transfer
 	}
 	pids := formatPeers(peers)
-	log.Debug("Gossip message", "msgHash", msgHash.TerminalString(), "msgType", reflect.TypeOf(m.msg), "targetPeer", pids)
+	log.Debug("Gossip message", "msgHash", msgHash.TerminalString(), "msgType", reflect.TypeOf(m.msg.Message), "targetPeer", pids)
 
-	r.cbft.tracing.RecordSend(r.cbft.config.NodeID.TerminalString(), msgHash.TerminalString(), fmt.Sprintf("%T", m.msg), pids)
+	r.cbft.tracing.RecordSend(r.cbft.config.NodeID.TerminalString(), msgHash.TerminalString(), fmt.Sprintf("%T", m.msg.Message), pids)
 	for _, peer := range peers {
-		if err := p2p.Send(peer.rw, msgType, m.msg); err != nil {
+		if err := p2p.Send(peer.rw, msgType, m.msg.Message); err != nil {
 			log.Error("Send message failed", "peer", peer.id, "err", err)
 		} else {
 			peer.MarkMessageHash(msgHash)

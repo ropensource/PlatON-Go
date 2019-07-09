@@ -94,9 +94,9 @@ func (h *baseHandler) broadcast(m *MsgPackage) {
 
 func (h *baseHandler) sendPeer(m *MsgPackage) {
 	if peer, err := h.peers.Get(m.peerID); err == nil {
-		log.Debug("Send message", "targetPeer", m.peerID, "type", reflect.TypeOf(m.msg), "msgHash", m.msg.MsgHash().TerminalString(), "BHash", m.msg.BHash().TerminalString())
+		log.Debug("Send message", "targetPeer", m.peerID, "type", reflect.TypeOf(m.msg.Message), "msgHash", m.msg.MsgHash().TerminalString(), "BHash", m.msg.BHash().TerminalString())
 
-		if err := p2p.Send(peer.rw, MessageType(m.msg.Message), m.msg); err != nil {
+		if err := p2p.Send(peer.rw, MessageType(m.msg.Message), m.msg.Message); err != nil {
 			log.Error("Send Peer error")
 			h.peers.Unregister(m.peerID)
 		}
