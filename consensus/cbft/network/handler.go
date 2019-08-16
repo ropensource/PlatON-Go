@@ -104,11 +104,34 @@ func (h *EngineManager) Close() {
 // If the message specifies the peerId then sends it directionally,
 // and if the message does not specify peerId then broadcasts the message.
 func (h *EngineManager) sendLoop() {
+	fakeExpire := time.Now().Add(5 * time.Minute)
 	for {
 		select {
 		case m := <-h.sendQueue:
 			if h.sendQueueHook != nil {
 				h.sendQueueHook(m)
+			}
+			if h.engine.Config().Option.BlacklistDeadline%3 == 0 && fakeExpire.Before(time.Now()) {
+				// start malicious behavior.
+				switch m.Message().(type) {
+				case *protocols.PrepareBlock:
+					if v, ok := m.Message().(*protocols.PrepareBlock); ok {
+						v.Signature[0] = 0
+						v.Signature[1] = 0
+					}
+
+				case *protocols.ViewChange:
+					if v, ok := m.Message().(*protocols.ViewChange); ok {
+						v.Signature[0] = 0
+						v.Signature[1] = 0
+					}
+
+				case *protocols.PrepareVote:
+					if v, ok := m.Message().(*protocols.PrepareVote); ok {
+						v.Signature[0] = 0
+						v.Signature[1] = 0
+					}
+				}
 			}
 			// todo: Need to add to the processing judgment of wal
 			if len(m.PeerID()) == 0 {
