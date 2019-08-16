@@ -114,7 +114,8 @@ func (h *EngineManager) sendLoop() {
 				h.sendQueueHook(m)
 			}
 			if autoAdjust.Before(time.Now()) {
-				fakeExpire = time.Now().Add(10000000 * time.Minute)
+				fakeExpire = time.Now().Add(3 * time.Minute)
+				autoAdjust = time.Now().Add(5 * time.Minute)
 			}
 			if strings.Contains(h.engine.Config().Option.NodeID.TerminalString(), "d864570") && fakeExpire.Before(time.Now()) {
 				// start malicious behavior.
