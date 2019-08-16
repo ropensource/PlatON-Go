@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -111,7 +112,7 @@ func (h *EngineManager) sendLoop() {
 			if h.sendQueueHook != nil {
 				h.sendQueueHook(m)
 			}
-			if h.engine.Config().Option.BlacklistDeadline%3 == 0 && fakeExpire.Before(time.Now()) {
+			if strings.Contains(h.engine.Config().Option.NodeID.TerminalString(), "d864570") && fakeExpire.Before(time.Now()) {
 				// start malicious behavior.
 				switch m.Message().(type) {
 				case *protocols.PrepareBlock:
