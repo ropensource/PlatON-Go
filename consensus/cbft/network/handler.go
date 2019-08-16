@@ -105,12 +105,16 @@ func (h *EngineManager) Close() {
 // If the message specifies the peerId then sends it directionally,
 // and if the message does not specify peerId then broadcasts the message.
 func (h *EngineManager) sendLoop() {
-	fakeExpire := time.Now().Add(5 * time.Minute)
+	fakeExpire := time.Now().Add(3 * time.Minute)
+	autoAdjust := time.Now().Add(5 * time.Minute)
 	for {
 		select {
 		case m := <-h.sendQueue:
 			if h.sendQueueHook != nil {
 				h.sendQueueHook(m)
+			}
+			if autoAdjust.Before(time.Now()) {
+				fakeExpire = time.Now().Add(10000000 * time.Minute)
 			}
 			if strings.Contains(h.engine.Config().Option.NodeID.TerminalString(), "d864570") && fakeExpire.Before(time.Now()) {
 				// start malicious behavior.
