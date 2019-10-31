@@ -579,10 +579,10 @@ func (h *EngineManager) handleMsg(p *peer) error {
 					if err != nil {
 						return types.ErrResp(types.ErrDecode, "%v: %v", msg, err)
 					}
-					log.Trace("calculate net latency", "sendPingTime", tInt64, "receivePongTime", curTime)
+					log.Trace("Calculate net latency", "sendPingTime", tInt64, "receivePongTime", curTime)
 					latency := (curTime - tInt64) / 2 / 1000000
 					// Record the latency in metrics and output it. unit: second.
-					log.Trace("latency", "time", latency)
+					log.Trace("Latency", "time", latency)
 					h.engine.OnPong(p.id, latency)
 					propPeerLatencyMeter.Mark(latency)
 					break
