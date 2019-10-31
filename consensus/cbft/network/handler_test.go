@@ -79,10 +79,12 @@ func (s *fakeCbft) HighestQCBlockBn() (uint64, common.Hash) {
 	return s.localPeer.QCBn(), common.Hash{}
 }
 
+// Returns the highest local Lock height.
 func (s *fakeCbft) HighestLockBlockBn() (uint64, common.Hash) {
 	return s.localPeer.LockedBn(), common.Hash{}
 }
 
+// Returns the highest local Commit height.
 func (s *fakeCbft) HighestCommitBlockBn() (uint64, common.Hash) {
 	return s.localPeer.CommitBn(), common.Hash{}
 }
