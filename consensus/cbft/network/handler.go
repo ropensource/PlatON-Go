@@ -560,7 +560,7 @@ func (h *EngineManager) handleMsg(p *peer) error {
 	case msg.Code == protocols.PongMsg:
 		// Processed after receiving the pong message.
 		curTime := time.Now().UnixNano()
-		log.Debug("handle a eth Pong message", "curTime", curTime)
+		log.Debug("Handle a eth Pong message", "curTime", curTime)
 		var pongTime protocols.Pong
 		if err := msg.Decode(&pongTime); err != nil {
 			return types.ErrResp(types.ErrDecode, "%v: %v", msg, err)
@@ -569,7 +569,7 @@ func (h *EngineManager) handleMsg(p *peer) error {
 			// Return the first element of list l or nil if the list is empty.
 			frontPing := p.ListFront()
 			if frontPing == nil {
-				log.Trace("end of p.pingList")
+				log.Trace("End of p.pingList")
 				break
 			}
 			log.Trace("Front element of p.pingList", "element", frontPing)
