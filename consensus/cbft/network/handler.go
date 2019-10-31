@@ -738,7 +738,7 @@ func (h *EngineManager) synchronize() {
 			}
 
 		case <-h.quitSend:
-			log.Error("synchronize quit")
+			log.Error("Synchronize quit")
 			return
 		}
 	}
