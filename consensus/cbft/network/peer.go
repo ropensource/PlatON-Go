@@ -54,11 +54,11 @@ type peer struct {
 	term      chan struct{}     // Termination channel to stop the broadcaster
 
 	// Node status information
-	highestQCBn *big.Int     // The highest QC height of the node
+	highestQCBn *big.Int     // The highest QC height of the node.
 	qcLock      sync.RWMutex //
-	lockedBn    *big.Int     // The highest Lock height of the node
+	lockedBn    *big.Int     // The highest Lock height of the node.
 	lLock       sync.RWMutex //
-	commitBn    *big.Int     // The highest Commit height of the node
+	commitBn    *big.Int     // The highest Commit height of the node.
 	cLock       sync.RWMutex //
 
 	// Record the message received by the peer node.
@@ -69,6 +69,8 @@ type peer struct {
 	pingList *list.List
 	listLock sync.RWMutex
 
+	// Message sending queue, the queue stores
+	// messages to be sent to the peer.
 	sendQueue chan *types.MsgPackage
 }
 
