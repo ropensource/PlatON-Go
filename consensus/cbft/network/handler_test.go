@@ -35,6 +35,7 @@ type fakeCbft struct {
 	peers          []*peer           // Pre-initialized node for testing.
 }
 
+// Returns the ID of the local node.
 func (s *fakeCbft) NodeID() discover.NodeID {
 	return s.localPeer.Peer.ID()
 }
