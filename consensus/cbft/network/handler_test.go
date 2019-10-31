@@ -62,6 +62,7 @@ func (s *fakeCbft) Config() *types.Config {
 	}
 }
 
+// Empty implementation.
 func (s *fakeCbft) ReceiveMessage(msg *types.MsgInfo) error {
 	fmt.Println(fmt.Sprintf("ReceiveMessage, type: %T", msg.Msg))
 	return nil
