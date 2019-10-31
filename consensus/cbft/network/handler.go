@@ -425,7 +425,7 @@ func (h *EngineManager) handler(p *p2p.Peer, rw p2p.MsgReadWriter) error {
 func (h *EngineManager) handleMsg(p *peer) error {
 	msg, err := p.ReadWriter().ReadMsg()
 	if err != nil {
-		p.Log().Error("read peer message error", "err", err)
+		p.Log().Error("Read peer message error", "err", err)
 		return err
 	}
 
