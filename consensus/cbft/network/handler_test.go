@@ -45,6 +45,7 @@ func (s *fakeCbft) ConsensusNodes() ([]discover.NodeID, error) {
 	return s.consensusNodes, nil
 }
 
+// Return to simulation test configuration.
 func (s *fakeCbft) Config() *types.Config {
 	return &types.Config{
 		Option: &types.OptionsConfig{
