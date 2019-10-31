@@ -95,11 +95,11 @@ type PrepareBlock struct {
 	Epoch         uint64               `json:"epoch"`
 	ViewNumber    uint64               `json:"viewNumber"`
 	Block         *types.Block         `json:"blockHash"`
-	BlockIndex    uint32               `json:"blockIndex"` // The block number of the current ViewNumber proposal, 0....10
-	ProposalIndex uint32               `json:"proposalIndex"`
+	BlockIndex    uint32               `json:"blockIndex"`             // The block number of the current ViewNumber proposal, 0....10
+	ProposalIndex uint32               `json:"proposalIndex"`          // Proposer's index.
 	PrepareQC     *ctypes.QuorumCert   `json:"prepareQC" rlp:"nil"`    // N-f aggregate signature
 	ViewChangeQC  *ctypes.ViewChangeQC `json:"viewchangeQC" rlp:"nil"` // viewChange aggregate signature
-	Signature     ctypes.Signature     `json:"signature"`
+	Signature     ctypes.Signature     `json:"signature"`              // PrepareBlock signature information
 	messageHash   atomic.Value         `rlp:"-"`
 }
 
