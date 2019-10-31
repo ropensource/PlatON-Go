@@ -29,8 +29,8 @@ import (
 // fakeCbft is a fake cbft for testing.It implements all
 // methods of the Cbft interface.
 type fakeCbft struct {
-	localPeer      *peer
-	consensusNodes []discover.NodeID
+	localPeer      *peer             // Represents a local peer
+	consensusNodes []discover.NodeID // All consensus nodes
 	writer         p2p.MsgReadWriter // Pipeline for receiving data.
 	peers          []*peer           // Pre-initialized node for testing.
 }
