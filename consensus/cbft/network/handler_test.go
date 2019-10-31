@@ -40,6 +40,7 @@ func (s *fakeCbft) NodeID() discover.NodeID {
 	return s.localPeer.Peer.ID()
 }
 
+// Return all consensus nodes.
 func (s *fakeCbft) ConsensusNodes() ([]discover.NodeID, error) {
 	return s.consensusNodes, nil
 }
