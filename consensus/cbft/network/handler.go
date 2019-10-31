@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/PlatONnetwork/PlatON-Go/common"
 
@@ -790,5 +790,4 @@ func (h *EngineManager) Testing() {
 			}
 		}(v)
 	}
-
 }
