@@ -62,17 +62,19 @@ func (s *fakeCbft) Config() *types.Config {
 	}
 }
 
-// Empty implementation.
+// ReceiveMessage receives consensus messages.
 func (s *fakeCbft) ReceiveMessage(msg *types.MsgInfo) error {
 	fmt.Println(fmt.Sprintf("ReceiveMessage, type: %T", msg.Msg))
 	return nil
 }
 
+// ReceiveSyncMsg receives synchronization messages.
 func (s *fakeCbft) ReceiveSyncMsg(msg *types.MsgInfo) error {
 	fmt.Println(fmt.Sprintf("ReceiveSyncMsg, type: %T", msg.Msg))
 	return nil
 }
 
+// Returns the highest local QC height.
 func (s *fakeCbft) HighestQCBlockBn() (uint64, common.Hash) {
 	return s.localPeer.QCBn(), common.Hash{}
 }
@@ -80,6 +82,7 @@ func (s *fakeCbft) HighestQCBlockBn() (uint64, common.Hash) {
 func (s *fakeCbft) HighestLockBlockBn() (uint64, common.Hash) {
 	return s.localPeer.LockedBn(), common.Hash{}
 }
+
 func (s *fakeCbft) HighestCommitBlockBn() (uint64, common.Hash) {
 	return s.localPeer.CommitBn(), common.Hash{}
 }
