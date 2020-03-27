@@ -24,8 +24,6 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/PlatONnetwork/PlatON-Go/x/gov"
-
 	"github.com/PlatONnetwork/PlatON-Go/common/hexutil"
 	"github.com/PlatONnetwork/PlatON-Go/crypto/sha3"
 
@@ -100,7 +98,9 @@ type StateDB struct {
 	parent             *StateDB
 
 	// Gov version in each state
-	govVersion uint32
+
+	//govVersion  uint32
+	// The index in clearReferenceFunc of parent StateDB
 }
 
 // Create a new state from a given trie.
@@ -119,7 +119,7 @@ func New(root common.Hash, db Database) (*StateDB, error) {
 		journal:            newJournal(),
 		clearReferenceFunc: make([]func(), 0),
 	}
-	state.govVersion = gov.GetCurrentActiveVersion(state)
+	//state.govVersion = gov.GetCurrentActiveVersion(state)
 	return state, nil
 }
 
@@ -138,7 +138,7 @@ func (self *StateDB) NewStateDB() *StateDB {
 	}
 
 	// fetch the gov version
-	stateDB.govVersion = gov.GetCurrentActiveVersion(stateDB)
+	//stateDB.govVersion = gov.GetCurrentActiveVersion(stateDB)
 
 	self.AddReferenceFunc(stateDB.clearParentRef)
 
@@ -181,11 +181,13 @@ func (self *StateDB) DumpStorage(check bool) {
 		for k, vk := range obj.dirtyStorage {
 			v, ok := obj.dirtyValueStorage[vk]
 			if ok {
-				log.Debug("dirty: key:%s, valueKey:%s, value:%s len:%d", hexutil.Encode([]byte(k)), vk.String(), hexutil.Encode(v.Value), len(v.Value))
+				//log.Debug("dirty: key:%s, valueKey:%s, value:%s len:%d", hexutil.Encode([]byte(k)), vk.String(), hexutil.Encode(v.Value), len(v.Value))
+				log.Debug("dirty: key:%s, valueKey:%s, value:%s len:%d", hexutil.Encode([]byte(k)), vk.String(), hexutil.Encode(v), len(v))
 				if check {
 					vg := disk.GetCommittedState(addr, []byte(k))
 
-					if check && !bytes.Equal(v.Value, vg) {
+					//if check && !bytes.Equal(v.Value, vg) {
+					if check && !bytes.Equal(v, vg) {
 						panic(fmt.Sprintf("not equal, key:%s, value:%s len:%d", hexutil.Encode([]byte(k)), hexutil.Encode(vg), len(vg)))
 					}
 				}
@@ -222,7 +224,7 @@ func (self *StateDB) Reset(root common.Hash) error {
 	self.logSize = 0
 	self.preimages = make(map[common.Hash][]byte)
 	self.clearJournalAndRefund()
-	self.govVersion = gov.GetCurrentActiveVersion(self)
+	//self.govVersion = gov.GetCurrentActiveVersion(self)
 	return nil
 }
 
@@ -578,9 +580,13 @@ func (self *StateDB) getStateObjectSnapshot(addr common.Address, key string) (co
 		}
 		valueKey, dirty := obj.dirtyStorage[key]
 		if dirty {
-			refValue, ok := obj.dirtyValueStorage[valueKey]
+			//refValue, ok := obj.dirtyValueStorage[valueKey]
+			//if ok {
+			//	return valueKey, refValue.Value
+			//}
+			value, ok := obj.dirtyValueStorage[valueKey]
 			if ok {
-				return valueKey, refValue.Value
+				return valueKey, value
 			}
 		}
 
@@ -731,8 +737,12 @@ func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value []byte
 	for it.Next() {
 		key := db.trie.GetKey(it.Key)
 		if valueKey, ok := so.dirtyStorage[string(key)]; ok {
-			if refValue, dirty := so.dirtyValueStorage[valueKey]; dirty {
-				cb(key, refValue.Value)
+			//if refValue, dirty := so.dirtyValueStorage[valueKey]; dirty {
+			//	cb(key, refValue.Value)
+			//	continue
+			//}
+			if value, dirty := so.dirtyValueStorage[valueKey]; dirty {
+				cb(key, value)
 				continue
 			}
 		}
@@ -823,7 +833,7 @@ func (self *StateDB) Copy() *StateDB {
 	self.refLock.Unlock()
 
 	// fetch the gov version
-	state.govVersion = gov.GetCurrentActiveVersion(state)
+	//state.govVersion = gov.GetCurrentActiveVersion(state)
 	return state
 }
 
