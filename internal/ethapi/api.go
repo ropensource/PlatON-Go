@@ -519,7 +519,6 @@ func (s *PublicBlockChainAPI) GetBalance(ctx context.Context, address common.Add
 	if state == nil || err != nil {
 		return nil, err
 	}
-	state.ClearParentReference()
 	return (*hexutil.Big)(state.GetBalance(address)), state.Error()
 }
 
@@ -557,7 +556,6 @@ func (s *PublicBlockChainAPI) GetCode(ctx context.Context, address common.Addres
 		return nil, err
 	}
 	code := state.GetCode(address)
-	state.ClearParentReference()
 	return code, state.Error()
 }
 
@@ -570,7 +568,6 @@ func (s *PublicBlockChainAPI) GetStorageAt(ctx context.Context, address common.A
 		return nil, err
 	}
 	res := state.GetState(address, common.HexToHash(key).Bytes())
-	state.ClearParentReference()
 	return res[:], state.Error()
 }
 
@@ -642,7 +639,6 @@ func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr
 	if err := vmError(); err != nil {
 		return nil, 0, false, err
 	}
-	state.ClearParentReference()
 	return res, gas, failed, err
 }
 
@@ -966,7 +962,6 @@ func (s *PublicTransactionPoolAPI) GetTransactionCount(ctx context.Context, addr
 		return nil, err
 	}
 	nonce := state.GetNonce(address)
-	state.ClearParentReference()
 	return (*hexutil.Uint64)(&nonce), state.Error()
 }
 

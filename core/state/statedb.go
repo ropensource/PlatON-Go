@@ -20,10 +20,11 @@ package state
 import (
 	"bytes"
 	"fmt"
-	"github.com/PlatONnetwork/PlatON-Go/x/gov"
 	"math/big"
 	"sort"
 	"sync"
+
+	"github.com/PlatONnetwork/PlatON-Go/x/gov"
 
 	"github.com/PlatONnetwork/PlatON-Go/common/hexutil"
 	"github.com/PlatONnetwork/PlatON-Go/crypto/sha3"
@@ -99,9 +100,7 @@ type StateDB struct {
 	parent             *StateDB
 
 	// Gov version in each state
-	govVersion  uint32
-	// The index in clearReferenceFunc of parent StateDB
-	referenceFuncIndex int
+	govVersion uint32
 }
 
 // Create a new state from a given trie.
@@ -141,8 +140,7 @@ func (self *StateDB) NewStateDB() *StateDB {
 	// fetch the gov version
 	stateDB.govVersion = gov.GetCurrentActiveVersion(stateDB)
 
-	index := self.AddReferenceFunc(stateDB.clearParentRef)
-	stateDB.referenceFuncIndex = index
+	self.AddReferenceFunc(stateDB.clearParentRef)
 
 	//if stateDB.parent != nil {
 	//	stateDB.parent.DumpStorage(false)
@@ -599,7 +597,7 @@ func (self *StateDB) getStateObjectSnapshot(addr common.Address, key string) (co
 }
 
 // Add childrent statedb reference
-func (self *StateDB) AddReferenceFunc(fn func()) int {
+func (self *StateDB) AddReferenceFunc(fn func()) {
 	self.refLock.Lock()
 	defer self.refLock.Unlock()
 	// It must not be nil
@@ -607,7 +605,6 @@ func (self *StateDB) AddReferenceFunc(fn func()) int {
 		panic("statedb had cleared")
 	}
 	self.clearReferenceFunc = append(self.clearReferenceFunc, fn)
-	return len(self.clearReferenceFunc) - 1
 }
 
 // Clear reference when StateDB is committed
@@ -615,9 +612,7 @@ func (self *StateDB) ClearReference() {
 	self.refLock.Lock()
 	defer self.refLock.Unlock()
 	for _, fn := range self.clearReferenceFunc {
-		if nil != fn {
-			fn()
-		}
+		fn()
 	}
 	log.Trace("clear all ref", "reflen", len(self.clearReferenceFunc))
 	if self.parent != nil {
@@ -627,33 +622,6 @@ func (self *StateDB) ClearReference() {
 	}
 	self.clearReferenceFunc = nil
 	self.parent = nil
-}
-
-// Clear reference by index
-func (self *StateDB) ClearIndexReference(index int) {
-	self.refLock.Lock()
-	defer self.refLock.Unlock()
-
-	if len(self.clearReferenceFunc) > index && self.clearReferenceFunc[index] != nil {
-		//fn := self.clearReferenceFunc[index]
-		//fn()
-		log.Trace("Before clear index ref", "reflen", len(self.clearReferenceFunc), "index", index)
-		//self.clearReferenceFunc = append(self.clearReferenceFunc[:index], self.clearReferenceFunc[index+1:]...)
-		self.clearReferenceFunc[index] = nil
-		log.Trace("After clear index ref", "reflen", len(self.clearReferenceFunc), "index", index)
-	}
-}
-
-// Clear Parent reference
-func (self *StateDB) ClearParentReference() {
-	self.refLock.Lock()
-	defer self.refLock.Unlock()
-
-	if self.parent != nil && self.referenceFuncIndex >= 0 {
-		self.parent.ClearIndexReference(self.referenceFuncIndex)
-		self.parent = nil
-		self.referenceFuncIndex = -1
-	}
 }
 
 // Retrieve a state object given by the address. Returns nil if not found.
@@ -853,7 +821,6 @@ func (self *StateDB) Copy() *StateDB {
 	}
 	state.parentCommitted = self.parentCommitted
 	self.refLock.Unlock()
-
 
 	// fetch the gov version
 	state.govVersion = gov.GetCurrentActiveVersion(state)
