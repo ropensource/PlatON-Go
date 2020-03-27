@@ -24,9 +24,6 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/PlatONnetwork/PlatON-Go/common/hexutil"
-	"github.com/PlatONnetwork/PlatON-Go/params"
-
 	"github.com/PlatONnetwork/PlatON-Go/core/vm"
 	"github.com/PlatONnetwork/PlatON-Go/log"
 
@@ -171,8 +168,8 @@ type stateObject struct {
 	originValueStorage ValueStorage // Storage cache of original entries to dedup rewrites
 
 	dirtyStorage      Storage               // Storage entries that need to be flushed to disk
-	dirtyValueStorage ReferenceValueStorage // Storage entries that need to be flushed to disk
-
+	//dirtyValueStorage ReferenceValueStorage // Storage entries that need to be flushed to disk
+	dirtyValueStorage ValueStorage // Storage entries that need to be flushed to disk
 	// Cache flags.
 	// When an object is marked suicided it will be delete from the trie
 	// during the "update" phase of the state transition.
@@ -189,31 +186,31 @@ func (s *stateObject) empty() bool {
 	return s.data.Nonce == 0 && s.data.Balance.Sign() == 0 && bytes.Equal(s.data.CodeHash, emptyCodeHash)
 }
 
-func (s *stateObject) delReferenceValueStorage(valueKey common.Hash) {
-	if checkForkPIP0_11_0(s.db) {
-		log.Trace("delReferenceValueStorage Start, deleleReferenceValue", "govVersion", s.db.govVersion, "valueKey", valueKey.String())
-		s.dirtyValueStorage.deleleReferenceValue(valueKey)
-	} else {
-		s.dirtyValueStorage.pureDelReferenceValue(valueKey)
-	}
-}
+//func (s *stateObject) delReferenceValueStorage(valueKey common.Hash) {
+//	if checkForkPIP0_11_0(s.db) {
+//		log.Trace("delReferenceValueStorage Start, deleleReferenceValue", "govVersion", s.db.govVersion, "valueKey", valueKey.String())
+//		s.dirtyValueStorage.deleleReferenceValue(valueKey)
+//	} else {
+//		s.dirtyValueStorage.pureDelReferenceValue(valueKey)
+//	}
+//}
 
-func (s *stateObject) setReferenceValueStorage(valueKey common.Hash, val []byte) {
-	if checkForkPIP0_11_0(s.db) {
-		log.Trace("setReferenceValueStorage Start, setReferenceValue", "govVersion", s.db.govVersion, "valueKey", valueKey.String(), "val", hexutil.Encode(val))
-		s.dirtyValueStorage.setReferenceValue(valueKey, val)
-	} else {
-		s.dirtyValueStorage.pureSetReferenceValue(valueKey, val)
-	}
-}
+//func (s *stateObject) setReferenceValueStorage(valueKey common.Hash, val []byte) {
+//	if checkForkPIP0_11_0(s.db) {
+//		log.Trace("setReferenceValueStorage Start, setReferenceValue", "govVersion", s.db.govVersion, "valueKey", valueKey.String(), "val", hexutil.Encode(val))
+//		s.dirtyValueStorage.setReferenceValue(valueKey, val)
+//	} else {
+//		s.dirtyValueStorage.pureSetReferenceValue(valueKey, val)
+//	}
+//}
 
-func checkForkPIP0_11_0(state *StateDB) bool {
-	if state.govVersion >= params.FORKVERSION_0_11_0 {
-		return true
-	} else {
-		return false
-	}
-}
+//func checkForkPIP0_11_0(state *StateDB) bool {
+//	if state.govVersion >= params.FORKVERSION_0_11_0 {
+//		return true
+//	} else {
+//		return false
+//	}
+//}
 
 // Account is the Ethereum consensus representation of accounts.
 // These objects are stored in the main account trie.
@@ -243,7 +240,8 @@ func newObject(db *StateDB, address common.Address, data Account) *stateObject {
 		originValueStorage: make(ValueStorage),
 
 		dirtyStorage:      make(Storage),
-		dirtyValueStorage: make(ReferenceValueStorage),
+		//dirtyValueStorage: make(ReferenceValueStorage),
+		dirtyValueStorage: make(ValueStorage),
 	}
 }
 
@@ -302,9 +300,13 @@ func (self *stateObject) GetState(db Database, keyTree string) []byte {
 	// If we have a dirty value for this state entry, return it
 	valueKey, dirty := self.dirtyStorage[keyTree]
 	if dirty {
-		refValue, ok := self.dirtyValueStorage[valueKey]
+		//refValue, ok := self.dirtyValueStorage[valueKey]
+		//if ok {
+		//	return refValue.Value
+		//}
+		value, ok := self.dirtyValueStorage[valueKey]
 		if ok {
-			return refValue.Value
+			return value
 		}
 	}
 	// Otherwise return the entry's original value
@@ -445,13 +447,13 @@ func (self *stateObject) setState(key string, valueKey common.Hash, value []byte
 
 	// delete value storage
 	if dirtyValue, ok := self.dirtyStorage[key]; ok {
-		//delete(self.dirtyValueStorage, dirtyValue)
-		self.delReferenceValueStorage(dirtyValue)
+		delete(self.dirtyValueStorage, dirtyValue)
+		//self.delReferenceValueStorage(dirtyValue)
 	}
 
 	self.dirtyStorage[key] = valueKey
-	//self.dirtyValueStorage[valueKey] = cpy
-	self.setReferenceValueStorage(valueKey, cpy)
+	self.dirtyValueStorage[valueKey] = cpy
+	//self.setReferenceValueStorage(valueKey, cpy)
 	fmt.Println("bd block 调试: setState", "key", hex.EncodeToString([]byte(key)), "valueKey", valueKey.String(), "value", len(value))
 }
 
@@ -462,14 +464,14 @@ func (self *stateObject) updateTrie(db Database) Trie {
 		delete(self.dirtyStorage, key)
 
 		if valueKey == self.originStorage[key] {
-			//delete(self.dirtyValueStorage, valueKey)
-			self.delReferenceValueStorage(valueKey)
+			delete(self.dirtyValueStorage, valueKey)
+			//self.delReferenceValueStorage(valueKey)
 			continue
 		}
 
 		if valueKey == emptyStorage || (valueKey == common.Hash{}) {
-			//delete(self.dirtyValueStorage, valueKey)
-			self.delReferenceValueStorage(valueKey)
+			delete(self.dirtyValueStorage, valueKey)
+			//self.delReferenceValueStorage(valueKey)
 
 			if oldValueKey, ok := self.originStorage[key]; ok {
 				delete(self.originValueStorage, oldValueKey)
@@ -487,10 +489,11 @@ func (self *stateObject) updateTrie(db Database) Trie {
 		self.setError(tr.TryUpdate([]byte(key), v))
 
 		//flush dirty value
-		if refValue, ok := self.dirtyValueStorage[valueKey]; ok {
-			//delete(self.dirtyValueStorage, valueKey)
-			self.delReferenceValueStorage(valueKey)
-			self.originValueStorage[valueKey] = refValue.Value
+		if /*refValue*/ value, ok := self.dirtyValueStorage[valueKey]; ok {
+			delete(self.dirtyValueStorage, valueKey)
+			self.originValueStorage[valueKey] = value
+			//self.delReferenceValueStorage(valueKey)
+			//self.originValueStorage[valueKey] = refValue.Value
 		}
 	}
 
