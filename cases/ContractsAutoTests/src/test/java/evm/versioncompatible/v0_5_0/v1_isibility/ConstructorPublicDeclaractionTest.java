@@ -41,15 +41,9 @@ public class ConstructorPublicDeclaractionTest extends ContractPrepareTest {
     public void constructPublicTest() {
         try {
 
-            ConstructorPublicDeclaraction constructorPublicDeclaraction = ConstructorPublicDeclaraction.deploy(web3j, transactionManager, provider,new BigInteger(initValue)).send();
+            ConstructorPublicDeclaraction constructorPublicDeclaraction = ConstructorPublicDeclaraction.load("0x7dac034192ed8e1ea83ae3d8dba4c63f52c27d79",web3j, transactionManager, provider);
 
             String contractAddress = constructorPublicDeclaraction.getContractAddress();
-            TransactionReceipt tx = constructorPublicDeclaraction.getTransactionReceipt().get();
-
-            collector.logStepPass("链上函数的初始值为："+initValue);
-
-            collector.logStepPass("FunctionDeclaraction deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + constructorPublicDeclaraction.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt =constructorPublicDeclaraction.update(new BigInteger(addValue)).send();
 

@@ -31,12 +31,9 @@ public class GetterTest extends ContractPrepareTest {
             author = "liweic", showName = "function.GetterTest-getter函数测试", sourcePrefix = "evm")
     public void getter() {
         try {
-            Getter getter = Getter.deploy(web3j, transactionManager, provider).send();
+            Getter getter = Getter.load("0x45f1f5e178ea587882e5dc213e4cdcae68b50534",web3j, transactionManager, provider);
 
             String contractAddress = getter.getContractAddress();
-            TransactionReceipt tx = getter.getTransactionReceipt().get();
-            collector.logStepPass("getter deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("getter deploy gasUsed:" + getter.getTransactionReceipt().get().getGasUsed());
 
             //验证编译器创建的getter函数
             BigInteger data = getter.data().send();

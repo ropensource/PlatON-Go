@@ -27,11 +27,8 @@ public class StorageLocationTest extends ContractPrepareTest {
     public void testStorageLocationCheck() {
         try {
             prepare();
-            StorageLocation storageLocation = StorageLocation.deploy(web3j, transactionManager, provider).send();
+            StorageLocation storageLocation = StorageLocation.load("0x3afb1299a65f8a57382723f98d56c51c944135fb",web3j, transactionManager, provider);
             String contractAddress = storageLocation.getContractAddress();
-            String transactionHash = storageLocation.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("StorageLocation issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + storageLocation.getTransactionReceipt().get().getGasUsed());
             byte[] result = storageLocation.storageLocaltionCheck(test).send();
             collector.assertEqual(JSONObject.toJSONString(result), JSONObject.toJSONString(test), "checkout array storage location result");
         } catch (Exception e) {
@@ -46,11 +43,8 @@ public class StorageLocationTest extends ContractPrepareTest {
     public void testTransfer() {
         try {
             prepare();
-            StorageLocation storageLocation = StorageLocation.deploy(web3j, transactionManager, provider).send();
+            StorageLocation storageLocation = StorageLocation.load("0xfdb298be125ad32159bae7d8d7eade874f61add2",web3j, transactionManager, provider);
             String contractAddress = storageLocation.getContractAddress();
-            String transactionHash = storageLocation.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("StorageLocation issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + storageLocation.getTransactionReceipt().get().getGasUsed());
             byte[] result = storageLocation.transfer(test).send();
             collector.assertEqual(JSONObject.toJSONString(result), JSONObject.toJSONString(test), "checkout external declare function array location result");
         } catch (Exception e) {

@@ -31,13 +31,10 @@ public class OverloadTest extends ContractPrepareTest {
     public void testStringMapping() {
         try {
 
-            Overload overload = Overload.deploy(web3j, transactionManager, provider).send();
+            Overload overload = Overload.load("0xd496d1b9442a4fbea6b6b60df48b1249724d0ca5",web3j, transactionManager, provider);
 
             String contractAddress = overload.getContractAddress();
-            TransactionReceipt tx = overload.getTransactionReceipt().get();
 
-            collector.logStepPass("OverloadTest deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + overload.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt = overload.g().send();
 

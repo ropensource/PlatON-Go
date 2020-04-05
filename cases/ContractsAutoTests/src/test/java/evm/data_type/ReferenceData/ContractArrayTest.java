@@ -31,11 +31,9 @@ public class ContractArrayTest extends ContractPrepareTest {
             author = "liweic", showName = "data_type.ContractArrayTest-合约数组测试",sourcePrefix = "evm")
     public void Contractarray() {
         try {
-            ContractArray contractarray = ContractArray.deploy(web3j, transactionManager, provider).send();
+            ContractArray contractarray = ContractArray.load("0xbe5f606bd54678328680cae4a0c03c586ebcbf07",web3j, transactionManager, provider);
 
             String contractAddress = contractarray.getContractAddress();
-            TransactionReceipt tx = contractarray.getTransactionReceipt().get();
-            collector.logStepPass("ContractArray deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
 
             //验证合约数组
             TransactionReceipt resultA = contractarray.f().send();

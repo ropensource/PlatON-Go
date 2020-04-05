@@ -32,12 +32,8 @@ public class BasicDataTypeConstantContractTest extends ContractPrepareTest {
         BasicDataTypeConstantContract basicDataTypeConstantContract = null;
         try {
             //合约部署
-            basicDataTypeConstantContract = BasicDataTypeConstantContract.deploy(web3j, transactionManager, provider).send();
+            basicDataTypeConstantContract = BasicDataTypeConstantContract.load("0x52ad68b93d0ff54b82dea45a077c391b53ea3449",web3j, transactionManager, provider);
             String contractAddress = basicDataTypeConstantContract.getContractAddress();
-            TransactionReceipt tx =  basicDataTypeConstantContract.getTransactionReceipt().get();
-            collector.logStepPass("BasicDataTypeConstantContract issued successfully.contractAddress:" + contractAddress
-                                    + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
         } catch (Exception e) {
             collector.logStepFail("BasicDataTypeConstantContract deploy fail.", e.toString());
             e.printStackTrace();

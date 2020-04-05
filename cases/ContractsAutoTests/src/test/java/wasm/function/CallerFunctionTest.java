@@ -22,11 +22,8 @@ public class CallerFunctionTest extends WASMContractPrepareTest {
 
         try {
             prepare();
-            CallerFunction caller = CallerFunction.deploy(web3j, transactionManager, provider).send();
+            CallerFunction caller = CallerFunction.load("0x7dfcf1ea2b65600802a92d1a71d598d75c062285",web3j, transactionManager, provider);
             String contractAddress = caller.getContractAddress();
-            String transactionHash = caller.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("CallerFunctionTest issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("CallerFunctionTest deploy gasUsed:" + caller.getTransactionReceipt().get().getGasUsed());
 
             String calleraddr =caller.get_platon_caller().send();
             collector.logStepPass("getPlatONCaller函数返回值:" + calleraddr);

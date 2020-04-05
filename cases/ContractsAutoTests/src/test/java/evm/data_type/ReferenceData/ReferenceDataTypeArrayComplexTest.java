@@ -42,12 +42,9 @@ public class ReferenceDataTypeArrayComplexTest extends ContractPrepareTest {
         ReferenceDataTypeArrayComplexContract referenceDataTypeArrayComplex = null;
         try {
             //合约部署
-            referenceDataTypeArrayComplex = ReferenceDataTypeArrayComplexContract.deploy(web3j, transactionManager, provider).send();
+            referenceDataTypeArrayComplex = ReferenceDataTypeArrayComplexContract.load("0x5ba7da9eb0713002a84deceb69cb0ab059a87226",web3j, transactionManager, provider);
             String contractAddress = referenceDataTypeArrayComplex.getContractAddress();
-            TransactionReceipt tx =  referenceDataTypeArrayComplex.getTransactionReceipt().get();
-            collector.logStepPass("referenceDataTypeArrayComplex issued successfully.contractAddress:" + contractAddress
-                                    + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
+
         } catch (Exception e) {
             collector.logStepFail("referenceDataTypeArrayComplex deploy fail.", e.toString());
             e.printStackTrace();

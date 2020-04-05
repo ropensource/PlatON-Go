@@ -28,13 +28,10 @@ public class ShortCircuitErrorTest extends ContractPrepareTest {
     public void shortCircuitStruct() {
         try {
 
-            ShortCircuitError shortCircuitError = ShortCircuitError.deploy(web3j, transactionManager, provider).send();
+            ShortCircuitError shortCircuitError = ShortCircuitError.load("0xcd3b0a1a09a28d8ef463659bfdbea9faf9fa0652",web3j, transactionManager, provider);
 
             String contractAddress = shortCircuitError.getContractAddress();
-            TransactionReceipt tx = shortCircuitError.getTransactionReceipt().get();
 
-            collector.logStepPass("ShortCircuitError deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + shortCircuitError.getTransactionReceipt().get().getGasUsed());
 
 
             Boolean fFlg = shortCircuitError.getF().send();

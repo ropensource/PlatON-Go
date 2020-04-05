@@ -36,12 +36,8 @@ public class BasicDataTypeUintOverTest extends ContractPrepareTest {
         BasicDataTypeContract basicDataTypeContract = null;
         try {
             //合约部署
-            basicDataTypeContract = BasicDataTypeContract.deploy(web3j, transactionManager, provider).send();
+            basicDataTypeContract = BasicDataTypeContract.load("0x443cb654d8e112db0090637509ca77c01c1a06e2",web3j, transactionManager, provider);
             String contractAddress = basicDataTypeContract.getContractAddress();
-            TransactionReceipt tx =  basicDataTypeContract.getTransactionReceipt().get();
-            collector.logStepPass("BasicDataTypeContract issued successfully.contractAddress:" + contractAddress
-                                    + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
         } catch (Exception e) {
             collector.logStepFail("BasicDataTypeContract deploy fail.", e.toString());
             e.printStackTrace();

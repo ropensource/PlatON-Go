@@ -25,11 +25,8 @@ public class EventCallContractTest extends ContractPrepareTest {
     public void testEmitEvent() {
         try {
             prepare();
-            EventCallContract eventCallContract = EventCallContract.deploy(web3j, transactionManager, provider).send();
+            EventCallContract eventCallContract = EventCallContract.load("0xf583932ce919139e7f59ca451d9d384067503f08",web3j, transactionManager, provider);
             String contractAddress = eventCallContract.getContractAddress();
-            String transactionHash = eventCallContract.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("EventCallContract issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + eventCallContract.getTransactionReceipt().get().getGasUsed());
             TransactionReceipt receipt = eventCallContract.emitEvent().send();
             List<EventCallContract.IncrementEventResponse> emitEventData = eventCallContract.getIncrementEvents(receipt);
             String data = emitEventData.get(0).log.getData();
@@ -46,10 +43,8 @@ public class EventCallContractTest extends ContractPrepareTest {
     public void testIndexedEvent() {
         try {
             prepare();
-            EventCallContract eventCallContract = EventCallContract.deploy(web3j, transactionManager, provider).send();
+            EventCallContract eventCallContract = EventCallContract.load("0xa108158a3c241454fb1ae774db25bef68464b6e4",web3j, transactionManager, provider);
             String contractAddress = eventCallContract.getContractAddress();
-            String transactionHash = eventCallContract.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("EventCallContract issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
             TransactionReceipt receipt = eventCallContract.indexedEvent().send();
             List<EventCallContract.DepositEventResponse> emitEventData = eventCallContract.getDepositEvents(receipt);
             String data = emitEventData.get(0).log.getData();
@@ -85,10 +80,8 @@ public class EventCallContractTest extends ContractPrepareTest {
     public void testEmitEvents() {
         try {
             prepare();
-            EventCallContract eventCallContract = EventCallContract.deploy(web3j, transactionManager, provider).send();
+            EventCallContract eventCallContract = EventCallContract.load("0x8ec07d7fda3785d70f1e2eb0ed08a3693da8e316",web3j, transactionManager, provider);
             String contractAddress = eventCallContract.getContractAddress();
-            String transactionHash = eventCallContract.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("EventCallContract issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
             TransactionReceipt receipt = eventCallContract.testBool().send();
             System.out.println(JSONObject.toJSONString(receipt.getLogs()));
             List<EventCallContract.BoolEventEventResponse> bList = eventCallContract.getBoolEventEvents(receipt);

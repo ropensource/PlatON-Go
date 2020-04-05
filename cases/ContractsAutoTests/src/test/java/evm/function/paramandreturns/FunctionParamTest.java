@@ -32,12 +32,9 @@ public class FunctionParamTest extends ContractPrepareTest {
     public void Functionparam() {
         try {
 
-            FunctionParam functionparam = FunctionParam.deploy(web3j, transactionManager, provider).send();
+            FunctionParam functionparam = FunctionParam.load("0xf5873e0b21ebec4e9ce615d3a9d40de8c1617b33",web3j, transactionManager, provider);
 
             String contractAddress = functionparam.getContractAddress();
-            TransactionReceipt tx = functionparam.getTransactionReceipt().get();
-            collector.logStepPass("FunctionParam deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("FunctionParam deploy gasUsed:" + functionparam.getTransactionReceipt().get().getGasUsed());
 
             BigInteger t = functionparam.t().send();
             collector.logStepPass("FunctionParam函数返回值：" + t);

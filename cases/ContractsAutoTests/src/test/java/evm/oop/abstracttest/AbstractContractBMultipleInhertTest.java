@@ -32,12 +32,8 @@ public class AbstractContractBMultipleInhertTest extends ContractPrepareTest {
         AbstractContractCSubclass abstractContractCSubclass= null;
         try {
             //合约部署
-            abstractContractCSubclass = AbstractContractCSubclass.deploy(web3j, transactionManager, provider).send();
+            abstractContractCSubclass = AbstractContractCSubclass.load("0x0025ac35b532cea4f260490cb864024be2b0c379",web3j, transactionManager, provider);
             String contractAddress = abstractContractCSubclass.getContractAddress();
-            TransactionReceipt tx = abstractContractCSubclass.getTransactionReceipt().get();
-            collector.logStepPass("abstractContract issued successfully.contractAddress:" + contractAddress
-                                           + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
         } catch (Exception e) {
             collector.logStepFail("abstractContract deploy fail.", e.toString());
             e.printStackTrace();

@@ -31,12 +31,8 @@ public class BasicDataTypeDeleteContractTest extends ContractPrepareTest {
         BasicDataTypeDeleteContract basicDataTypeDeleteContract = null;
         try {
             //合约部署
-            basicDataTypeDeleteContract = BasicDataTypeDeleteContract.deploy(web3j, transactionManager, provider).send();
+            basicDataTypeDeleteContract = BasicDataTypeDeleteContract.load("0x2be3d605f806e117636d4980d47898f114685e60",web3j, transactionManager, provider);
             String contractAddress = basicDataTypeDeleteContract.getContractAddress();
-            TransactionReceipt tx =  basicDataTypeDeleteContract.getTransactionReceipt().get();
-            collector.logStepPass("BasicDataTypeDelete issued successfully.contractAddress:" + contractAddress
-                                    + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
         } catch (Exception e) {
             collector.logStepFail("BasicDataTypeDelete deploy fail.", e.toString());
             e.printStackTrace();

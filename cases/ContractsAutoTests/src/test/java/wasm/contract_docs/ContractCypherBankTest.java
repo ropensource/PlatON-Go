@@ -34,11 +34,8 @@ public class ContractCypherBankTest extends WASMContractPrepareTest {
     public void testSimpleStorageContract() {
         try {
             // deploy contract.
-            Bank contract = Bank.deploy(web3j, transactionManager, provider).send();
+            Bank contract = Bank.load("0xb1abe9cad4cbaf744221ac96899ed53b2c91fa45",web3j, transactionManager, provider);
             String contractAddress = contract.getContractAddress();
-            String transactionHash = contract.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("contract_CypherBank issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("contract_CypherBank deploy successfully. gasUsed: " + contract.getTransactionReceipt().get().getGasUsed().toString());
 
             // transfer
             Transfer t = new Transfer(web3j, transactionManager);

@@ -31,12 +31,8 @@ public class ReferenceDataTypeStructRecursiveContractTest extends ContractPrepar
         ReferenceDataTypeStructRecursiveContract referenceDataTypeStructRecursive = null;
         try {
             //合约部署
-            referenceDataTypeStructRecursive = ReferenceDataTypeStructRecursiveContract.deploy(web3j, transactionManager, provider).send();
+            referenceDataTypeStructRecursive = ReferenceDataTypeStructRecursiveContract.load("0x977df04246c9fe4228c047cc1220a89c666e76cb",web3j, transactionManager, provider);
             String contractAddress = referenceDataTypeStructRecursive.getContractAddress();
-            TransactionReceipt tx =  referenceDataTypeStructRecursive.getTransactionReceipt().get();
-            collector.logStepPass("ReferenceDataTypeStructRecursive issued successfully.contractAddress:" + contractAddress
-                                    + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
         } catch (Exception e) {
             collector.logStepFail("ReferenceDataTypeStructRecursive deploy fail.", e.toString());
             e.printStackTrace();

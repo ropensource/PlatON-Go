@@ -30,11 +30,9 @@ public class TimeTest extends ContractPrepareTest {
             author = "liweic", showName = "evm.function.TimeTest-时间单位测试", sourcePrefix = "evm")
     public void time() {
         try {
-            Time time = Time.deploy(web3j, transactionManager, provider).send();
+            Time time = Time.load("0x9b568edddb288ac387861ceaf08185a1629b51bb",web3j, transactionManager, provider);
 
             String contractAddress = time.getContractAddress();
-            TransactionReceipt tx = time.getTransactionReceipt().get();
-            collector.logStepPass("time deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
 
             //验证时间单位及换算
             //时间戳获取

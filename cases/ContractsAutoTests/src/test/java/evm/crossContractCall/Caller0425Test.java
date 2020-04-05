@@ -32,19 +32,13 @@ public class Caller0425Test extends ContractPrepareTest {
     public void caller0425CallTest() {
         try {
             //调用者合约地址
-            Caller0425 caller0425 = Caller0425.deploy(web3j, transactionManager, provider).send();
+            Caller0425 caller0425 = Caller0425.load("0xcf9ed4c1670e53d6f457fc7b25f77a2d83015928",web3j, transactionManager, provider);
             String callerContractAddress = caller0425.getContractAddress();
-            TransactionReceipt tx = caller0425.getTransactionReceipt().get();
-            collector.logStepPass("Caller0425 deploy successfully.contractAddress:" + callerContractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + caller0425.getTransactionReceipt().get().getGasUsed());
 
 
             //被调用者合约地址
-            Callee0425 callee0425 = Callee0425.deploy(web3j, transactionManager, provider).send();
+            Callee0425 callee0425 = Callee0425.load("0x0c3037b685421017981f82b21e1fb1e47756d106",web3j, transactionManager, provider);
             String calleeContractAddress = callee0425.getContractAddress();
-            TransactionReceipt tx1 = callee0425.getTransactionReceipt().get();
-            collector.logStepPass("Callee0425 deploy successfully.contractAddress:" + calleeContractAddress + ", hash:" + tx1.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + callee0425.getTransactionReceipt().get().getGasUsed());
 
             //查询调用者x值
             String callerX = caller0425.getCallerX().send().toString();
@@ -80,17 +74,13 @@ public class Caller0425Test extends ContractPrepareTest {
     public void caller0425CallCodeTest() {
         try {
             //调用者合约地址
-            Caller0425 caller0425 = Caller0425.deploy(web3j, transactionManager, provider).send();
+            Caller0425 caller0425 = Caller0425.load("0xc81e790282897cf5e1aeff2e3af25b2d41a4601b",web3j, transactionManager, provider);
             String callerContractAddress = caller0425.getContractAddress();
-            TransactionReceipt tx = caller0425.getTransactionReceipt().get();
-            collector.logStepPass("Caller0425 deploy successfully.contractAddress:" + callerContractAddress + ", hash:" + tx.getTransactionHash());
 
 
             //被调用者合约地址
-            Callee0425 callee0425 = Callee0425.deploy(web3j, transactionManager, provider).send();
+            Callee0425 callee0425 = Callee0425.load("0xbf8a3a4a937efe73355bb997b7d1b667e585c7be",web3j, transactionManager, provider);
             String calleeContractAddress = callee0425.getContractAddress();
-            TransactionReceipt tx1 = callee0425.getTransactionReceipt().get();
-            collector.logStepPass("Callee0425 deploy successfully.contractAddress:" + calleeContractAddress + ", hash:" + tx1.getTransactionHash());
 
             //查询调用者x值
             String callerX = caller0425.getCallerX().send().toString();
@@ -126,17 +116,13 @@ public class Caller0425Test extends ContractPrepareTest {
     public void caller0425DelegateCallTest() {
         try {
             //调用者合约地址
-            Caller0425 caller0425 = Caller0425.deploy(web3j, transactionManager, provider).send();
+            Caller0425 caller0425 = Caller0425.load("0x29a1fc4ea037f96dbff19df00ad15d86be1d268d",web3j, transactionManager, provider);
             String callerContractAddress = caller0425.getContractAddress();
-            TransactionReceipt tx = caller0425.getTransactionReceipt().get();
-            collector.logStepPass("Caller0425 deploy successfully.contractAddress:" + callerContractAddress + ", hash:" + tx.getTransactionHash());
 
 
             //被调用者合约地址
-            Callee0425 callee0425 = Callee0425.deploy(web3j, transactionManager, provider).send();
+            Callee0425 callee0425 = Callee0425.load("0xe4389a17563c5c02a0b988e169d769bd529f7996",web3j, transactionManager, provider);
             String calleeContractAddress = callee0425.getContractAddress();
-            TransactionReceipt tx1 = callee0425.getTransactionReceipt().get();
-            collector.logStepPass("Callee0425 deploy successfully.contractAddress:" + calleeContractAddress + ", hash:" + tx1.getTransactionHash());
 
             //查询调用者x值
             String callerX = caller0425.getCallerX().send().toString();

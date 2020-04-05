@@ -31,15 +31,11 @@ public class StructDataTypeTest extends ContractPrepareTest {
         StructDataType structDataType = null;
         try {
             //合约部署
-            structDataType = StructDataType.deploy(web3j, transactionManager, provider).send();
+            structDataType = StructDataType.load("0xe1ce75bfedbcc1f69be525386baf7b13d07e7cfa",web3j, transactionManager, provider);
             String contractAddress = structDataType.getContractAddress();
-            TransactionReceipt tx =  structDataType.getTransactionReceipt().get();
-            collector.logStepPass("StructDataType issued successfully.contractAddress:" + contractAddress
-                                    + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
 
             //调用合约
-            tx = structDataType.run().send();
+            TransactionReceipt tx = structDataType.run().send();
             collector.logStepPass("StructDataTypeTest run() successful.transactionHash:" + tx.getTransactionHash());
             collector.logStepPass( "currentBlockNumber:" + tx.getBlockNumber());
 

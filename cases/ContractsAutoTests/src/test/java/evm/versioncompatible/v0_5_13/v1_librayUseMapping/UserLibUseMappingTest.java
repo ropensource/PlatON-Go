@@ -37,13 +37,10 @@ public class UserLibUseMappingTest extends ContractPrepareTest {
     public void testLibMappingParam() {
         try {
 
-            UserMapping userMapping = UserMapping.deploy(web3j, transactionManager, provider).send();
+            UserMapping userMapping = UserMapping.load("0x7a7a7139314f011da9fe2dbdcdf1dda7bdd3b2b8",web3j, transactionManager, provider);
 
             String contractAddress = userMapping.getContractAddress();
-            TransactionReceipt tx = userMapping.getTransactionReceipt().get();
 
-            collector.logStepPass("UserLibUseMappingTest deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + userMapping.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt = userMapping.setOutUser(new BigInteger(age),new BigInteger(id)).send();
 

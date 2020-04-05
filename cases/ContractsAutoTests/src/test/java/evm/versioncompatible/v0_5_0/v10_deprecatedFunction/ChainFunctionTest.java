@@ -34,13 +34,9 @@ public class ChainFunctionTest extends ContractPrepareTest {
     public void throwExceptionTest() {
         try {
 
-            ChainFunction chainFunction = ChainFunction.deploy(web3j, transactionManager, provider,new BigInteger("1")).send();
+            ChainFunction chainFunction = ChainFunction.load("0x79f6e1c3aa7dfec8202ebd84e8c4a9e03a9bc810",web3j, transactionManager, provider);
 
             String contractAddress = chainFunction.getContractAddress();
-            TransactionReceipt tx = chainFunction.getTransactionReceipt().get();
-
-            collector.logStepPass("ChainFunction deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + chainFunction.getTransactionReceipt().get().getGasUsed());
 
             String  msgSender = chainFunction.deceased(isDeceased,new BigInteger(less9)).send();
 

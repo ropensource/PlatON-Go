@@ -36,12 +36,8 @@ public class ContractInnerFunctionTest extends WASMContractPrepareTest {
         String name = "zjsunzone";
         try {
             // deploy contract.
-            InnerFunction innerFunction = InnerFunction.deploy(web3j, transactionManager, provider).send();
+            InnerFunction innerFunction = InnerFunction.load("0x6d9dc30809fd11c7c7953ef1a9a275727c12c92f",web3j, transactionManager, provider);
             String contractAddress = innerFunction.getContractAddress();
-            String transactionHash = innerFunction.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("InnerFunction issued successfully.contractAddress:"
-                    + contractAddress + ", hash:" + transactionHash
-                    + " gasUsed:" + innerFunction.getTransactionReceipt().get().getGasUsed().toString());
 
             // test: timestamp(bug)
             Uint64 timestamp = innerFunction.timestamp().send();

@@ -29,26 +29,17 @@ public class ThreeContractCallTest extends ContractPrepareTest {
     public void threeContractCaller() {
         try {
             //第一个合约
-            CallerOne callerOne = CallerOne.deploy(web3j, transactionManager, provider).send();
+            CallerOne callerOne = CallerOne.load("0x14d865935e5a5b7e1798bc8745625a33bdea3d24",web3j, transactionManager, provider);
             String callerContractAddress = callerOne.getContractAddress();
-            TransactionReceipt tx = callerOne.getTransactionReceipt().get();
-            collector.logStepPass("CallerOne deploy successfully.contractAddress:" + callerContractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + callerOne.getTransactionReceipt().get().getGasUsed());
 
 
             //第二个合约
-            CallerTwo callerTwo = CallerTwo.deploy(web3j, transactionManager, provider).send();
+            CallerTwo callerTwo = CallerTwo.load("0x9f5839158882b3bffc2ee9198c5944c67f5093b8",web3j, transactionManager, provider);
             String callerTwoContractAddress = callerTwo.getContractAddress();
-            tx = callerTwo.getTransactionReceipt().get();
-            collector.logStepPass("CallerTwo deploy successfully.contractAddress:" + callerTwoContractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + callerTwo.getTransactionReceipt().get().getGasUsed());
 
             //第三个合约
-            CallerThree callerThree = CallerThree.deploy(web3j, transactionManager, provider).send();
+            CallerThree callerThree = CallerThree.load("0x533a923ffd5b7c83b48490a3ad939f75eb7fce62",web3j, transactionManager, provider);
             String callerThreeContractAddress = callerThree.getContractAddress();
-            tx = callerThree.getTransactionReceipt().get();
-            collector.logStepPass("DelegatecallCallee deploy successfully.contractAddress:" + callerThreeContractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + callerThree.getTransactionReceipt().get().getGasUsed());
 
 
 

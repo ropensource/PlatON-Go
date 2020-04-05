@@ -38,16 +38,13 @@ public class NewSecPledgeApplyManagerTest extends ContractPrepareTest {
     public void createPledgeApplyCommonTest() {
         try {
 
-            NewSecPledgeApplyManager newSecPledgeApplyManager = NewSecPledgeApplyManager.deploy(web3j, transactionManager, provider).send();
+            NewSecPledgeApplyManager newSecPledgeApplyManager = NewSecPledgeApplyManager.load("0x2b29d97de7f1e4eb3dda23ff84ff58a56905ae8f",web3j, transactionManager, provider);
             String callerContractAddress = newSecPledgeApplyManager.getContractAddress();
-            TransactionReceipt tx = newSecPledgeApplyManager.getTransactionReceipt().get();
-            collector.logStepPass("NewSecPledgeApplyManager deploy successfully.contractAddress:" + callerContractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + newSecPledgeApplyManager.getTransactionReceipt().get().getGasUsed());
 
             Date start = new Date();
 
 
-            tx = newSecPledgeApplyManager.createPledgeApplyCommon(secApply).send();
+            TransactionReceipt tx = newSecPledgeApplyManager.createPledgeApplyCommon(secApply).send();
             //插入业务数据
             collector.logStepPass("NewSecPledgeApplyManager add successfully hash:" + tx.getTransactionHash());
 

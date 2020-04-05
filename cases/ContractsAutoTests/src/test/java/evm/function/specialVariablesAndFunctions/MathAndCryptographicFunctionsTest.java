@@ -43,12 +43,9 @@ public class MathAndCryptographicFunctionsTest extends ContractPrepareTest {
             author = "liweic", showName = "function.MathAndCryptographicFunctionsTest-数学和加密函数测试", sourcePrefix = "evm")
     public void MathAndCryptographicfunction() {
         try {
-            MathAndCryptographicFunctions mathAndCryptographicFunctions = MathAndCryptographicFunctions.deploy(web3j, transactionManager, provider).send();
+            MathAndCryptographicFunctions mathAndCryptographicFunctions = MathAndCryptographicFunctions.load("0x0db4cdd31e007268f6a3890067ef4886d2243fdc",web3j, transactionManager, provider);
 
             String contractAddress = mathAndCryptographicFunctions.getContractAddress();
-            TransactionReceipt tx = mathAndCryptographicFunctions.getTransactionReceipt().get();
-            collector.logStepPass("MathAndCryptographicFunctionsTest deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("MathAndCryptographicFunctionsTest deploy gasUsed:" + mathAndCryptographicFunctions.getTransactionReceipt().get().getGasUsed());
 
             //验证addmod函数
             BigInteger resultA = mathAndCryptographicFunctions.callAddMod().send();

@@ -32,15 +32,11 @@ public class ContractMigrateV1Test extends WASMContractPrepareTest {
 
         try {
             prepare();
-            ContractMigrate_v1 contractMigratev1 = ContractMigrate_v1.deploy(web3j, transactionManager, provider).send();
+            ContractMigrate_v1 contractMigratev1 = ContractMigrate_v1.load("0x317144e1182eb690478f14e92d8a94c4276aae39",web3j, transactionManager, provider);
             String contractAddress = contractMigratev1.getContractAddress();
-            String transactionHash = contractMigratev1.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("ContractMigrateV1 issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + contractMigratev1.getTransactionReceipt().get().getGasUsed());
 
             //设置值
-            transactionHash = contractMigratev1.set_string(name).send().getTransactionHash();
-            collector.logStepPass("ContractMigrateV1 set_string successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
+            String transactionHash = contractMigratev1.set_string(name).send().getTransactionHash();
 
             //查询结果
             String chainName = contractMigratev1.get_string().send();

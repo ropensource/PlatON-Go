@@ -22,11 +22,8 @@ public class CreateContractTest extends ContractPrepareTest {
     public void testNewContract() {
         try {
             prepare();
-            CreateContract createContract = CreateContract.deploy(web3j, transactionManager, provider).send();
+            CreateContract createContract = CreateContract.load("0x2c0d8a2ebf40a56fd2b2dd09ba2de35f4e5296e8",web3j, transactionManager, provider);
             String contractAddress = createContract.getContractAddress();
-            String transactionHash = createContract.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("CreateContract issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + createContract.getTransactionReceipt().get().getGasUsed());
             Tuple2<BigInteger, BigInteger> result = createContract.getTargetCreateContractData().send();
             Tuple2<BigInteger, BigInteger> expect = new Tuple2<>(new BigInteger("1000"),new BigInteger("0"));
             collector.assertEqual(result, expect, "checkout new contract param");

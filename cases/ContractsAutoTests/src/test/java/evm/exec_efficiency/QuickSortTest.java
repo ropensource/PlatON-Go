@@ -50,10 +50,8 @@ public class QuickSortTest extends ContractPrepareTest {
                 }
             }
 
-            QuickSort contract = QuickSort.deploy(web3j, transactionManager, provider).send();
+            QuickSort contract = QuickSort.load("0xb1345150d129a53652672edbc35a681d2a430892",web3j, transactionManager, provider);
             contractAddress = contract.getContractAddress();
-            collector.logStepPass("QuickSort contract deploy successful. contractAddress:" + contractAddress + " hash:" + contract.getTransactionReceipt().get().getTransactionHash());
-            collector.logStepPass("QuickSort contract deploy successful. gasUsed:" + contract.getTransactionReceipt().get().getGasUsed().toString());
 
             TransactionReceipt transactionReceipt = contract.sort(array, BigInteger.ZERO, BigInteger.valueOf(array.size() - 1)).send();
 

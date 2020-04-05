@@ -33,12 +33,9 @@ public class SumAssemblyTest extends ContractPrepareTest {
             author = "liweic", showName = "function.SumAssemblyTest-汇编操作指令测试", sourcePrefix = "evm")
     public void Sumassembly() {
         try {
-            SumAssembly sumassembly = SumAssembly.deploy(web3j, transactionManager, provider).send();
+            SumAssembly sumassembly = SumAssembly.load("0x9acef9db1c52b0c1127378fb39a58fe7cfdafc96", web3j, transactionManager, provider);
 
             String contractAddress = sumassembly.getContractAddress();
-            TransactionReceipt tx = sumassembly.getTransactionReceipt().get();
-            collector.logStepPass("SumAssembly deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("SumAssembly deploy gasUsed:" + sumassembly.getTransactionReceipt().get().getGasUsed());
 
             //验证内联汇编操作指令
             BigInteger result = sumassembly.sum().send();

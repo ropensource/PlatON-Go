@@ -31,12 +31,9 @@ public class AddressFunctionsTest extends ContractPrepareTest {
             author = "liweic", showName = "function.AddressFunctionsTest-地址相关函数测试", sourcePrefix = "evm")
     public void Addressfunctions() {
         try {
-            AddressFunctions addressfunctions = AddressFunctions.deploy(web3j, transactionManager, provider).send();
+            AddressFunctions addressfunctions = AddressFunctions.load("0xc9c7d35e8855dc1a4503212f31933b2c680cc6ed",web3j, transactionManager, provider);
 
             String contractAddress = addressfunctions.getContractAddress();
-            TransactionReceipt tx = addressfunctions.getTransactionReceipt().get();
-            collector.logStepPass("Addressfunctions deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("Addressfunctions deploy gasUsed:" + addressfunctions.getTransactionReceipt().get().getGasUsed());
 
             //验证balance(地址账户)函数
             BigInteger money = addressfunctions.getBalance("0x03f0e0a226f081a5daecfda222cafc959ed7b800").send();

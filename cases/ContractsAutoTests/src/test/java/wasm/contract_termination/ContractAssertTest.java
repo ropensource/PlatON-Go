@@ -27,11 +27,8 @@ public class ContractAssertTest extends WASMContractPrepareTest {
         Uint64 errorValue = Uint64.of(12L);
         try {
             prepare();
-            Contract_termination contractTermination = Contract_termination.deploy(web3j, transactionManager, provider).send();
+            Contract_termination contractTermination = Contract_termination.load("0xf799f28aeeee7eb15109ab040ada4f26abb149a7",web3j, transactionManager, provider);
             String contractAddress = contractTermination.getContractAddress();
-            String transactionHash = contractTermination.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("ContractTermination issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + contractTermination.getTransactionReceipt().get().getGasUsed());
 
             //调用包含platon_assert的合约,传正常的值
             TransactionReceipt transactionReceipt = contractTermination.transfer_assert(nomalName,nomalValue).send();

@@ -30,11 +30,8 @@ public class ComputeDateTest extends WASMContractPrepareTest {
 
         try {
             prepare();
-            ComputeDate computedate = ComputeDate.deploy(web3j, transactionManager, provider).send();
+            ComputeDate computedate = ComputeDate.load("0x2131fcc7630cb13f6e0355df8dc63f2e13191141",web3j, transactionManager, provider);
             String contractAddress = computedate.getContractAddress();
-            String transactionHash = computedate.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("ComputeDate issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("ComputeDate deploy gasUsed:" + computedate.getTransactionReceipt().get().getGasUsed());
 
             Int32 datediff1 = computedate.MonthsBetween2Date("20190201", "20200219").send();
             collector.logStepPass("日期月份差:" + datediff1.value);

@@ -39,13 +39,9 @@ public class ConstructorInternalDeclaractionTest extends ContractPrepareTest {
             author = "hudenian", showName = "ConstructorInternalDeclaractionTest-可见性测试", sourcePrefix = "evm")
     public void update() {
         try {
-            ConstructorInternalDeclaractionSub constructorInternalDeclaractionSub = ConstructorInternalDeclaractionSub.deploy(web3j, transactionManager, provider,new BigInteger(initValue)).send();
-
+            ConstructorInternalDeclaractionSub constructorInternalDeclaractionSub = ConstructorInternalDeclaractionSub.load("0x39f74bd5d49293aabef9f1e71e8ece7f1041d6e9", web3j, transactionManager, provider);
             String contractAddress = constructorInternalDeclaractionSub.getContractAddress();
-            TransactionReceipt tx = constructorInternalDeclaractionSub.getTransactionReceipt().get();
 
-            collector.logStepPass("ConstructorInternalDeclaractionSub deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + constructorInternalDeclaractionSub.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt =constructorInternalDeclaractionSub.update(new BigInteger(addValue)).send();
 

@@ -32,13 +32,10 @@ public class CreationCodeTypeTest extends ContractPrepareTest {
     public void testType() {
         try {
 
-            CreationCode creationCode = CreationCode.deploy(web3j, transactionManager, provider).send();
+            CreationCode creationCode = CreationCode.load("0x0ff9435db48857bde1838c35cf40b578080a9c92",web3j, transactionManager, provider);
 
             String contractAddress = creationCode.getContractAddress();
-            TransactionReceipt tx = creationCode.getTransactionReceipt().get();
 
-            collector.logStepPass("CreationCode deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + creationCode.getTransactionReceipt().get().getGasUsed());
 
             byte[] createCodeByteArr = creationCode.getContractName().send();
 

@@ -30,12 +30,9 @@ public class InterTest extends ContractPrepareTest {
             author = "liweic", showName = "function.InterTest-函数可见性继承合约调用内部方法测试", sourcePrefix = "evm")
     public void inter() {
         try {
-            Inter intercall = Inter.deploy(web3j, transactionManager, provider).send();
+            Inter intercall = Inter.load("0xcc26da9ff98b25b71c336affb4ab1dd77b51faa9",web3j, transactionManager, provider);
 
             String contractAddress = intercall.getContractAddress();
-            TransactionReceipt tx = intercall.getTransactionReceipt().get();
-            collector.logStepPass("Inter deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("Inter deploy gasUsed:" + intercall.getTransactionReceipt().get().getGasUsed());
 
             //验证继承合约可以调用父合约的内部方法
             BigInteger interdata = intercall.g().send();

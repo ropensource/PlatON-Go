@@ -29,12 +29,9 @@ public class ConstantViewPureTest extends ContractPrepareTest {
             author = "liweic", showName = "function.ConstantViewPureTest-函数声明方式测试", sourcePrefix = "evm")
     public void constantviewPure() {
         try {
-            ConstantViewPure constantviewpure = ConstantViewPure.deploy(web3j, transactionManager, provider).send();
+            ConstantViewPure constantviewpure = ConstantViewPure.load("0x1d8dc232ca55a4e54ae7ea1d91ad8e62aebd65b3",web3j, transactionManager, provider);
 
             String contractAddress = constantviewpure.getContractAddress();
-            TransactionReceipt tx = constantviewpure.getTransactionReceipt().get();
-            collector.logStepPass("ConstantViewPure deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("ConstantViewPure deploy gasUsed:" + constantviewpure.getTransactionReceipt().get().getGasUsed());
 
 
             TransactionReceipt age = constantviewpure.constantViewPure().send();

@@ -16,11 +16,8 @@ public class SafeMathMockTest extends ContractPrepareTest {
     public void testMax() {
         try {
             prepare();
-            SafeMathMock using = SafeMathMock.deploy(web3j, transactionManager, provider).send();
+            SafeMathMock using = SafeMathMock.load("0x20ec0ed750fd8fe9c1b7bbd63a1f21e37ddb42c9",web3j, transactionManager, provider);
             String contractAddress = using.getContractAddress();
-            String transactionHash = using.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("SafeMathMock issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + using.getTransactionReceipt().get().getGasUsed());
             BigInteger result = using.max(new BigInteger("12"), new BigInteger("13")).send();
             collector.assertEqual(result, new BigInteger("13"), "checkout library function");
         } catch (Exception e) {
@@ -53,10 +50,8 @@ public class SafeMathMockTest extends ContractPrepareTest {
     public void testAverage() {
         try {
             prepare();
-            SafeMathMock using = SafeMathMock.deploy(web3j, transactionManager, provider).send();
+            SafeMathMock using = SafeMathMock.load("0x5b9513089e960361162e6f8082eb136ae150fc83",web3j, transactionManager, provider);
             String contractAddress = using.getContractAddress();
-            String transactionHash = using.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("SafeMathMock issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
             BigInteger result = using.average(new BigInteger("12"), new BigInteger("13")).send();
             collector.assertEqual(result, new BigInteger("12"), "checkout library function");
         } catch (Exception e) {
@@ -71,10 +66,8 @@ public class SafeMathMockTest extends ContractPrepareTest {
     public void testAdd() {
         try {
             prepare();
-            SafeMathMock using = SafeMathMock.deploy(web3j, transactionManager, provider).send();
+            SafeMathMock using = SafeMathMock.load("0xe63aa66f3c6e8a2c29d99193c0f5748466e662c0",web3j, transactionManager, provider);
             String contractAddress = using.getContractAddress();
-            String transactionHash = using.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("SafeMathMock issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
             BigInteger result = using.add(new BigInteger("12"), new BigInteger("13")).send();
             collector.assertEqual(result, new BigInteger("25"), "checkout library function");
         } catch (Exception e) {
@@ -88,10 +81,8 @@ public class SafeMathMockTest extends ContractPrepareTest {
     public void testMul() {
         try {
             prepare();
-            SafeMathMock using = SafeMathMock.deploy(web3j, transactionManager, provider).send();
+            SafeMathMock using = SafeMathMock.load("0xce54ff31b3946ca8d548ad60656a6b91c5b94d36",web3j, transactionManager, provider);
             String contractAddress = using.getContractAddress();
-            String transactionHash = using.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("SafeMathMock issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
             BigInteger result = using.mul(new BigInteger("12"), new BigInteger("13")).send();
             collector.assertEqual(result, new BigInteger("156"), "checkout library function");
         } catch (Exception e) {
@@ -105,10 +96,8 @@ public class SafeMathMockTest extends ContractPrepareTest {
     public void testSub() {
         try {
             prepare();
-            SafeMathMock using = SafeMathMock.deploy(web3j, transactionManager, provider).send();
+            SafeMathMock using = SafeMathMock.load("0x2a47e3309eb32530762c4b81e659613384f57993",web3j, transactionManager, provider);
             String contractAddress = using.getContractAddress();
-            String transactionHash = using.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("SafeMathMock issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
             BigInteger result = using.sub(new BigInteger("12"), new BigInteger("13")).send();
             collector.assertEqual(result, new BigInteger("3963877391197344453575983046348115674221700746820753546331534351508065746944"), "checkout library function");
             result = using.sub(new BigInteger("13"), new BigInteger("12")).send();

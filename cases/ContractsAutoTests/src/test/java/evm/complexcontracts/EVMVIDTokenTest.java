@@ -22,7 +22,7 @@ public class EVMVIDTokenTest extends ContractPrepareTest {
             author = "qcxiao", showName = "complexcontracts.EVMVIDTokenTest", sourcePrefix = "evm")
     public void test() {
         try {
-            VIDToken token = VIDToken.deploy(web3j, transactionManager, provider).send();
+            VIDToken token = VIDToken.load("0xd274af0cd10ccf17ddb272b17d15f8e5a3875db8",web3j, transactionManager, provider);
             String contractAddress = token.getContractAddress();
             TransactionReceipt tx = token.getTransactionReceipt().get();
 

@@ -30,14 +30,10 @@ public class InterfaceContractBLimitEnumTest extends ContractPrepareTest {
         InterfaceContractEnumTest interfaceContractEnumTest= null;
         try {
             //合约部署
-            interfaceContractEnumTest = InterfaceContractEnumTest.deploy(web3j, transactionManager, provider).send();
+            interfaceContractEnumTest = InterfaceContractEnumTest.load("0xd448dd83c3667d09d1dda81cb752dfc2ae194c2f",web3j, transactionManager, provider);
             String contractAddress = interfaceContractEnumTest.getContractAddress();
-            TransactionReceipt tx = interfaceContractEnumTest.getTransactionReceipt().get();
 
-            collector.logStepPass("InterfaceContractEnumTest issued successfully.contractAddress:" + contractAddress
-                                    + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
 
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
 
         } catch (Exception e) {
             collector.logStepFail("InterfaceContractEnumTest deploy fail.", e.toString());

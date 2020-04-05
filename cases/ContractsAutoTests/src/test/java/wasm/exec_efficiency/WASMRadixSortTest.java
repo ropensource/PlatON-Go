@@ -30,10 +30,8 @@ public class WASMRadixSortTest extends WASMContractPrepareTest {
 
             Integer numberOfCalls = Integer.valueOf(driverService.param.get("numberOfCalls"));
 
-            RadixSort radixsort = RadixSort.deploy(web3j, transactionManager, provider).send();
+            RadixSort radixsort = RadixSort.load("0x1299ef235623d8471a3ce9a677515f9fa79b5386",web3j, transactionManager, provider);
             contractAddress = radixsort.getContractAddress();
-            collector.logStepPass("contract deploy successful. contractAddress:" + contractAddress);
-            collector.logStepPass("deploy gas used:" + radixsort.getTransactionReceipt().get().getGasUsed());
 
             Int64[] arr = new Int64[numberOfCalls];
 

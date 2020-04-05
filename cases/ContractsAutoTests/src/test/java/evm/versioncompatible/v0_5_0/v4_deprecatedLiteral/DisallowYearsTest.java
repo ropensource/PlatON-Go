@@ -34,13 +34,9 @@ public class DisallowYearsTest extends ContractPrepareTest {
     public void update() {
         try {
 
-            DisallowYears disallowYears = DisallowYears.deploy(web3j, transactionManager, provider).send();
+            DisallowYears disallowYears = DisallowYears.load("0x199d69e79355e99f2db6b5c2237af57471de23f3",web3j, transactionManager, provider);
 
             String contractAddress = disallowYears.getContractAddress();
-            TransactionReceipt tx = disallowYears.getTransactionReceipt().get();
-
-            collector.logStepPass("FunctionDeclaraction deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + disallowYears.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt = disallowYears.testyear(new BigInteger("10"),new BigInteger("1")).send();
 

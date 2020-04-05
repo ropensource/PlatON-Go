@@ -33,12 +33,9 @@ public class ModifiersTest extends ContractPrepareTest {
             author = "liweic", showName = "function.ModifiersTest-多修饰器函数测试", sourcePrefix = "evm")
     public void modifiers() {
         try {
-            Modifiers modifiers = Modifiers.deploy(web3j, transactionManager, provider).send();
+            Modifiers modifiers = Modifiers.load("0xeed943b09f258a814bc9c9bc458246b00e0ae036",web3j, transactionManager, provider);
 
             String contractAddress = modifiers.getContractAddress();
-            TransactionReceipt tx = modifiers.getTransactionReceipt().get();
-            collector.logStepPass("modifiers deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("modifiers deploy gasUsed:" + modifiers.getTransactionReceipt().get().getGasUsed());
 
             //验证多修饰器函数调用
             TransactionReceipt result = modifiers.test1().send();

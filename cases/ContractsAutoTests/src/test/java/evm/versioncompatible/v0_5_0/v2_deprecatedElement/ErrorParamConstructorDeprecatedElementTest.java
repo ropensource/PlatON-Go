@@ -39,15 +39,12 @@ public class ErrorParamConstructorDeprecatedElementTest extends ContractPrepareT
     public void update() {
         try {
 
-            ErrorParamConstructor errorParamConstructor = ErrorParamConstructor.deploy(web3j, transactionManager, provider,new BigInteger(initValue)).send();
+            ErrorParamConstructor errorParamConstructor = ErrorParamConstructor.load("0xcfaf7fded613175646ef28277441e5ec6cf3ac02",web3j, transactionManager, provider);
 
             String contractAddress = errorParamConstructor.getContractAddress();
-            TransactionReceipt tx = errorParamConstructor.getTransactionReceipt().get();
 
             collector.logStepPass("链上函数的初始值为："+initValue);
 
-            collector.logStepPass("FunctionDeclaraction deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + errorParamConstructor.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt =errorParamConstructor.update(new BigInteger(addValue)).send();
 

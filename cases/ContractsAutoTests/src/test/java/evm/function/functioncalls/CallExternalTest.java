@@ -32,12 +32,9 @@ public class CallExternalTest extends ContractPrepareTest {
             author = "liweic", showName = "function.CallExternalTest-函数外部调用测试", sourcePrefix = "evm")
     public void callexternal() {
         try {
-            CallExternal callexternal = CallExternal.deploy(web3j, transactionManager, provider).send();
+            CallExternal callexternal = CallExternal.load("0x94fa6b1deafca1fa529e638e26cecf8e398c95f0",web3j, transactionManager, provider);
 
             String contractAddress = callexternal.getContractAddress();
-            TransactionReceipt tx = callexternal.getTransactionReceipt().get();
-            collector.logStepPass("callexternal deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("callexternal deploy gasUsed:" + callexternal.getTransactionReceipt().get().getGasUsed());
 
             //验证函数外部调用
             TransactionReceipt result = callexternal.getResult(new BigInteger("1")).send();

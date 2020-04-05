@@ -33,12 +33,8 @@ public class InheritContractAMutipleTest extends ContractPrepareTest {
         InheritContractBMutipleClass inheritContractMutipleTest2 = null;
         try {
             //合约部署(InheritContractMutipleTest1)
-            inheritContractMutipleTest1 = InheritContractAMutipleClass.deploy(web3j, transactionManager, provider).send();
+            inheritContractMutipleTest1 = InheritContractAMutipleClass.load("0xa876bd68d4dc7db8651adb55e0674000e6d665c3",web3j, transactionManager, provider);
             String contractAddress = inheritContractMutipleTest1.getContractAddress();
-            TransactionReceipt tx =  inheritContractMutipleTest1.getTransactionReceipt().get();
-            collector.logStepPass("InheritContractMutipleTest1 issued successfully.contractAddress:" + contractAddress
-                                    + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
 
 
             //合约部署(InheritContractMutipleTest1)

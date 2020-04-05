@@ -32,12 +32,8 @@ public class AbstractContractCInhertTest extends ContractPrepareTest {
         AbstractContractFSubclass abstractContractFSubclass= null;
         try {
             //合约部署
-            abstractContractFSubclass = AbstractContractFSubclass.deploy(web3j, transactionManager, provider).send();
+            abstractContractFSubclass = AbstractContractFSubclass.load("0x709a7e49f76c3a02c26e2a5b3c7099268c5ba8be",web3j, transactionManager, provider);
             String contractAddress = abstractContractFSubclass.getContractAddress();
-            TransactionReceipt tx = abstractContractFSubclass.getTransactionReceipt().get();
-            collector.logStepPass("abstractContract issued successfully.contractAddress:" + contractAddress
-                                           + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
         } catch (Exception e) {
             collector.logStepFail("abstractContract deploy fail.", e.toString());
             e.printStackTrace();

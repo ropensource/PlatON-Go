@@ -38,12 +38,9 @@ public class PlatonUnitTest extends ContractPrepareTest {
 
         try {
 
-            PlatonUnit platonUnit = PlatonUnit.deploy(web3j, transactionManager, provider).send();
+            PlatonUnit platonUnit = PlatonUnit.load("0xf95bb85b5b6c7901be0eb56b8f65584cefb77167", web3j, transactionManager, provider);
 
             String contractAddress = platonUnit.getContractAddress();
-            TransactionReceipt tx = platonUnit.getTransactionReceipt().get();
-            collector.logStepPass("PlatonUnitTest deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("PlatonUnitTest deploy gasUsed:" + platonUnit.getTransactionReceipt().get().getGasUsed());
 
             //发起转账
             Transfer transfer = new Transfer(web3j, transactionManager);

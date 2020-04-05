@@ -31,12 +31,9 @@ public class PlatONTokenTest extends ContractPrepareTest {
             author = "liweic", showName = "evm.function.TimeTest-Token单位测试", sourcePrefix = "evm")
     public void PlatonTokens() {
         try {
-            PlatONToken platonToken = PlatONToken.deploy(web3j, transactionManager, provider).send();
+            PlatONToken platonToken = PlatONToken.load("0x91931c869c4c5283bfb4e4de9d200f11269b10e8",web3j, transactionManager, provider);
 
             String contractAddress = platonToken.getContractAddress();
-            TransactionReceipt tx = platonToken.getTransactionReceipt().get();
-            collector.logStepPass("PlatONToken deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-
 
             //lat
             BigInteger getlat = platonToken.Plat().send();

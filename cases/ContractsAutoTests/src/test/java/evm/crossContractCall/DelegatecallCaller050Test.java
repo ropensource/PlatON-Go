@@ -30,19 +30,13 @@ public class DelegatecallCaller050Test extends ContractPrepareTest {
     public void caller050Test() {
         try {
             //调用者合约地址
-            DelegatecallCaller_050 delegatecallCaller_050 = DelegatecallCaller_050.deploy(web3j, transactionManager, provider).send();
+            DelegatecallCaller_050 delegatecallCaller_050 = DelegatecallCaller_050.load("0x7df5501300e113fa2f04f5b6c1cb0d9487fbf733",web3j, transactionManager, provider);
             String callerContractAddress = delegatecallCaller_050.getContractAddress();
-            TransactionReceipt tx = delegatecallCaller_050.getTransactionReceipt().get();
-            collector.logStepPass("DelegatecallCaller_050 deploy successfully.contractAddress:" + callerContractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + delegatecallCaller_050.getTransactionReceipt().get().getGasUsed());
 
 
             //被调用者合约地址
-            DelegatecallCallee_050 delegatecallCallee050 = DelegatecallCallee_050.deploy(web3j, transactionManager, provider).send();
+            DelegatecallCallee_050 delegatecallCallee050 = DelegatecallCallee_050.load("0x853c69bc7659f8fbe5e9f0fb438cad02d887937e",web3j, transactionManager, provider);
             String calleeContractAddress = delegatecallCallee050.getContractAddress();
-            TransactionReceipt tx1 = delegatecallCallee050.getTransactionReceipt().get();
-            collector.logStepPass("delegatecallCallee050 deploy successfully.contractAddress:" + calleeContractAddress + ", hash:" + tx1.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + delegatecallCallee050.getTransactionReceipt().get().getGasUsed());
 
             //查询调用者x值
             String callerX = delegatecallCaller_050.getCallerX().send().toString();

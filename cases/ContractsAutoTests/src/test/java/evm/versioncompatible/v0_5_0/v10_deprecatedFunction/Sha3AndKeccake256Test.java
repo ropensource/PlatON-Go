@@ -34,13 +34,10 @@ public class Sha3AndKeccake256Test extends ContractPrepareTest {
     public void keccake256() {
         try {
 
-            Sha3AndKeccake256 sha3AndKeccake256 = Sha3AndKeccake256.deploy(web3j, transactionManager, provider).send();
+            Sha3AndKeccake256 sha3AndKeccake256 = Sha3AndKeccake256.load("0xe4a3ba057d75cfda7743bba512f0b9addfe65419",web3j, transactionManager, provider);
 
             String contractAddress = sha3AndKeccake256.getContractAddress();
-            TransactionReceipt tx = sha3AndKeccake256.getTransactionReceipt().get();
 
-            collector.logStepPass("Sha3AndKeccake256 deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + sha3AndKeccake256.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt = sha3AndKeccake256.keccak(sha256value).send();
 

@@ -37,16 +37,13 @@ public class OrderDaoTest extends ContractPrepareTest {
     public void orderDaoTest() {
         try {
             //调用者合约地址
-            OrderDao orderDao = OrderDao.deploy(web3j, transactionManager, provider).send();
+            OrderDao orderDao = OrderDao.load("0x87283029979742e4a93cff52130b76e692157721",web3j, transactionManager, provider);
             String callerContractAddress = orderDao.getContractAddress();
-            TransactionReceipt tx = orderDao.getTransactionReceipt().get();
-            collector.logStepPass("OrderDao deploy successfully.contractAddress:" + callerContractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + orderDao.getTransactionReceipt().get().getGasUsed());
 
             Date start = new Date();
 
 
-            tx = orderDao.insert_SecPledgeApply(secApply).send();
+           TransactionReceipt tx = orderDao.insert_SecPledgeApply(secApply).send();
             //插入业务数据
             collector.logStepPass("OrderDao callDoublelTest successfully hash:" + tx.getTransactionHash());
 

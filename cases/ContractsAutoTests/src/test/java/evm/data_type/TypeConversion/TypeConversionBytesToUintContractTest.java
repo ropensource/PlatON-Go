@@ -30,12 +30,8 @@ public class TypeConversionBytesToUintContractTest extends ContractPrepareTest {
         TypeConversionBytesToUintContract typeConversionBytesToUintContract = null;
         try {
             //合约部署
-            typeConversionBytesToUintContract = TypeConversionBytesToUintContract.deploy(web3j, transactionManager, provider).send();
+            typeConversionBytesToUintContract = TypeConversionBytesToUintContract.load("0x91187f1494637f031ab350dec531077d1d879049",web3j, transactionManager, provider);
             String contractAddress = typeConversionBytesToUintContract.getContractAddress();
-            TransactionReceipt tx =  typeConversionBytesToUintContract.getTransactionReceipt().get();
-            collector.logStepPass("typeConversion issued successfully.contractAddress:" + contractAddress
-                                    + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
         } catch (Exception e) {
             collector.logStepFail("typeConversion deploy fail.", e.toString());
             e.printStackTrace();

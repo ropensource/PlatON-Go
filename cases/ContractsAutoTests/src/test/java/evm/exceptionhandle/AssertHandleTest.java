@@ -31,11 +31,8 @@ public class AssertHandleTest extends ContractPrepareTest {
     public void testIntChangeException() {
         try {
             prepare();
-            AssertHandle handle = AssertHandle.deploy(web3j, transactionManager, provider).send();
+            AssertHandle handle = AssertHandle.load("0x8941503e50b0e5e25c5ada39c502b43d030f1bf0",web3j, transactionManager, provider);
             String contractAddress = handle.getContractAddress();
-            String transactionHash = handle.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("AssertHandle issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + handle.getTransactionReceipt().get().getGasUsed());
             TransactionReceipt receipt = handle.intChangeException(new BigInteger("2")).send();
             collector.logStepPass("checkout integer contains enums,transactionHah="+receipt.getTransactionHash());
             try {
@@ -60,11 +57,8 @@ public class AssertHandleTest extends ContractPrepareTest {
     public void testParamException() {
         try {
             prepare();
-            AssertHandle handle = AssertHandle.deploy(web3j, transactionManager, provider).send();
+            AssertHandle handle = AssertHandle.load("0x199ee5db8f73fa9fad2b4eafc13bfab2a7971da5",web3j, transactionManager, provider);
             String contractAddress = handle.getContractAddress();
-            String transactionHash = handle.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("AssertHandle issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + handle.getTransactionReceipt().get().getGasUsed());
             TransactionReceipt receipt = handle.paramException(new BigInteger("5")).send();
             collector.logStepPass("checkout normal,transactionHash="+receipt.getTransactionHash());
             try {

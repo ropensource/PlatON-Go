@@ -20,22 +20,16 @@ public class ContractDelegateCallStorageStrTest extends WASMContractPrepareTest 
             prepare();
 
             // deploy the target contract which the name is `storge_str`, first
-            ContractStorageString strc = ContractStorageString.deploy(web3j, transactionManager, provider).send();
-            collector.logStepPass("gas used after deploy storge_str contract:" + strc.getTransactionReceipt().get().getGasUsed());
+            ContractStorageString strc = ContractStorageString.load("0x46a6f6ef96765dd41b7a78ab016880581a4363cd",web3j, transactionManager, provider);
 
 
             String strcAddr = strc.getContractAddress();
-            String helloTxHash = strc.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("storge_str deployed sucessfully, contractAddress:" + strcAddr + ", txHash:" + helloTxHash);
 
 
             // deploy the delegate_call  contract second
-            ContractDelegateCallStorageString delegateCall = ContractDelegateCallStorageString.deploy(web3j, transactionManager, provider).send();
-            collector.logStepPass("gas used after deploy delegate_call_storge_str contract:" + delegateCall.getTransactionReceipt().get().getGasUsed());
+            ContractDelegateCallStorageString delegateCall = ContractDelegateCallStorageString.load("0x902ecb5bdff08abbad05b59ed19b38a9ffb5505a",web3j, transactionManager, provider);
 
             String delegateCallAddr = delegateCall.getContractAddress();
-            String delegateCallTxHash = delegateCall.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("cross_delegate_call_storage_str deployed sucessfully, contractAddress:" + delegateCallAddr + ", txHash:" + delegateCallTxHash);
 
 
             // check arr size 1st

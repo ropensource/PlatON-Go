@@ -23,11 +23,8 @@ public class LibraryUsingForAllTest extends ContractPrepareTest {
     public void testReplace() {
         try {
             prepare();
-            LibraryUsingForAll using = LibraryUsingForAll.deploy(web3j, transactionManager, provider).send();
+            LibraryUsingForAll using = LibraryUsingForAll.load("0x315f789dafafee05f929e9bf26858b8c9bf71165",web3j, transactionManager, provider);
             String contractAddress = using.getContractAddress();
-            String transactionHash = using.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("LibraryUsingForAll issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + using.getTransactionReceipt().get().getGasUsed());
             TransactionReceipt receipt = using.replace(new BigInteger("12"),new BigInteger("14")).send();
             collector.assertEqual(receipt.getStatus(),"0x1" , "checkout using a for * success");
     } catch (Exception e) {

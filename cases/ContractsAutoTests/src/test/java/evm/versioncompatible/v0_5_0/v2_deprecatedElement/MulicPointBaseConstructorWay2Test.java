@@ -39,15 +39,12 @@ public class MulicPointBaseConstructorWay2Test extends ContractPrepareTest {
     public void update() {
         try {
 
-            MulicPointBaseConstructorWay2 mulicPointBaseConstructorWay2 = MulicPointBaseConstructorWay2.deploy(web3j, transactionManager, provider,new BigInteger(initValue)).send();
+            MulicPointBaseConstructorWay2 mulicPointBaseConstructorWay2 = MulicPointBaseConstructorWay2.load("0x081e3c1309b68518f0d16495be024f7257d8b974",web3j, transactionManager, provider);
 
             String contractAddress = mulicPointBaseConstructorWay2.getContractAddress();
-            TransactionReceipt tx = mulicPointBaseConstructorWay2.getTransactionReceipt().get();
 
             collector.logStepPass("链上函数的初始值为："+initValue);
 
-            collector.logStepPass("FunctionDeclaraction deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + mulicPointBaseConstructorWay2.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt =mulicPointBaseConstructorWay2.update(new BigInteger(addValue)).send();
 

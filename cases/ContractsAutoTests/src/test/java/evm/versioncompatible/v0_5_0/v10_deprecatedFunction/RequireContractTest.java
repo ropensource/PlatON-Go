@@ -38,15 +38,12 @@ public class RequireContractTest extends ContractPrepareTest {
     public void requireTest() {
         try {
 
-            RequireContract requireContract = RequireContract.deploy(web3j, transactionManager, provider).send();
+            RequireContract requireContract = RequireContract.load("0x87c20eadce30906d3493deafec686d340b7b2456",web3j, transactionManager, provider);
 
             String contractAddress = requireContract.getContractAddress();
-            TransactionReceipt tx = requireContract.getTransactionReceipt().get();
 
-            collector.logStepPass("RequireContractTest deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + requireContract.getTransactionReceipt().get().getGasUsed());
 
-            tx = requireContract.toSenderAmount(new BigInteger(first),new BigInteger(second)).send();
+            TransactionReceipt tx = requireContract.toSenderAmount(new BigInteger(first),new BigInteger(second)).send();
 
             if(Integer.valueOf(first).intValue()>Integer.valueOf(second)){
                 String chainResult = requireContract.getResult().send().toString();

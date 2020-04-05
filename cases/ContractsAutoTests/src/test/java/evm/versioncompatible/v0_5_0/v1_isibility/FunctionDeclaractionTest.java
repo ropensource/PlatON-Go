@@ -38,16 +38,12 @@ public class FunctionDeclaractionTest extends ContractPrepareTest {
     public void update_public() {
         try {
 
-            FunctionDeclaraction functionDeclaraction = FunctionDeclaraction.deploy(web3j, transactionManager, provider).send();
+            FunctionDeclaraction functionDeclaraction = FunctionDeclaraction.load("0xc0ddb066cc00d76130ddc4564501ed827c009e56",web3j, transactionManager, provider);
 
             String contractAddress = functionDeclaraction.getContractAddress();
-            TransactionReceipt tx = functionDeclaraction.getTransactionReceipt().get();
 
             initValue = functionDeclaraction.getBalance().send().toString();
             collector.logStepPass("链上函数的初始值为："+initValue);
-
-            collector.logStepPass("FunctionDeclaraction deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + functionDeclaraction.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt =functionDeclaraction.update_public(new BigInteger(addValue)).send();
 
@@ -71,16 +67,13 @@ public class FunctionDeclaractionTest extends ContractPrepareTest {
     public void update_external() {
         try {
 
-            FunctionDeclaraction functionDeclaraction = FunctionDeclaraction.deploy(web3j, transactionManager, provider).send();
+            FunctionDeclaraction functionDeclaraction = FunctionDeclaraction.load("0x4a170e0786b8cedf7966ca57ebd2580ef10d42e8",web3j, transactionManager, provider);
 
             String contractAddress = functionDeclaraction.getContractAddress();
-            TransactionReceipt tx = functionDeclaraction.getTransactionReceipt().get();
 
             initValue = functionDeclaraction.getBalance().send().toString();
             collector.logStepPass("执行update_external前balance值为："+initValue);
 
-            collector.logStepPass("FunctionDeclaraction deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + functionDeclaraction.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt =functionDeclaraction.update_external(new BigInteger(addValue)).send();
 

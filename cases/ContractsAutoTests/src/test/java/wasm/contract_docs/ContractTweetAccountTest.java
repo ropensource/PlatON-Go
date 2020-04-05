@@ -35,11 +35,8 @@ public class ContractTweetAccountTest extends WASMContractPrepareTest {
 
         try {
             // deploy contract.
-            TweetAccount contract = TweetAccount.deploy(web3j, transactionManager, provider).send();
+            TweetAccount contract = TweetAccount.load("0x3b7fd568a4fd5f1d2b8c4d49e0f6b3024cbb2769",web3j, transactionManager, provider);
             String contractAddress = contract.getContractAddress();
-            String transactionHash = contract.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("TweetAccount deploy successfully. contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("TweetAccount deploy successfully. gasUsed: " + contract.getTransactionReceipt().get().getGasUsed().toString());
 
             //  get owner
             WasmAddress owner = contract.getOwnerAddress().send();

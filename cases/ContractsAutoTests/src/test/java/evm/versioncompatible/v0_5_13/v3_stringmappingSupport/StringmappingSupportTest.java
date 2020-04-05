@@ -42,13 +42,10 @@ public class StringmappingSupportTest extends ContractPrepareTest {
 
         try {
 
-            StringmappingSupport stringmappingSupport = StringmappingSupport.deploy(web3j, transactionManager, provider).send();
+            StringmappingSupport stringmappingSupport = StringmappingSupport.load("0xbecc220005f620a72681795440607b144551064d",web3j, transactionManager, provider);
 
             String contractAddress = stringmappingSupport.getContractAddress();
-            TransactionReceipt tx = stringmappingSupport.getTransactionReceipt().get();
 
-            collector.logStepPass("StringmappingSupportTest deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + stringmappingSupport.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt = stringmappingSupport.setStringmapValue(strKey,strValue).send();
 
@@ -75,13 +72,10 @@ public class StringmappingSupportTest extends ContractPrepareTest {
 
         try {
 
-            StringmappingSupport stringmappingSupport = StringmappingSupport.deploy(web3j, transactionManager, provider).send();
+            StringmappingSupport stringmappingSupport = StringmappingSupport.load("0x4ff1d7c0f86a7c63f2b05266eaaed5764a4b7c97",web3j, transactionManager, provider);
 
             String contractAddress = stringmappingSupport.getContractAddress();
-            TransactionReceipt tx = stringmappingSupport.getTransactionReceipt().get();
 
-            collector.logStepPass("StringmappingSupportTest deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + stringmappingSupport.getTransactionReceipt().get().getGasUsed());
 
             byte[] byte9Key = DataChangeUtil.stringToBytesN(strKey,9);
             TransactionReceipt transactionReceipt = stringmappingSupport.setByte32mapValue(byte9Key,strValue).send();

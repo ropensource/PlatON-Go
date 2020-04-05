@@ -31,12 +31,8 @@ public class ReferenceDataTypeStructContractTest extends ContractPrepareTest {
         ReferenceDataTypeStructContract referenceDataTypeStructContract = null;
         try {
             //合约部署
-            referenceDataTypeStructContract = ReferenceDataTypeStructContract.deploy(web3j, transactionManager, provider).send();
+            referenceDataTypeStructContract = ReferenceDataTypeStructContract.load("0xb82f54d378cbeffb26e80a55ab26ff0ca1b96cbf",web3j, transactionManager, provider);
             String contractAddress = referenceDataTypeStructContract.getContractAddress();
-            TransactionReceipt tx =  referenceDataTypeStructContract.getTransactionReceipt().get();
-            collector.logStepPass("ReferenceDataTypeStructContract issued successfully.contractAddress:" + contractAddress
-                                    + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
         } catch (Exception e) {
             collector.logStepFail("ReferenceDataTypeStructContract deploy fail.", e.toString());
             e.printStackTrace();

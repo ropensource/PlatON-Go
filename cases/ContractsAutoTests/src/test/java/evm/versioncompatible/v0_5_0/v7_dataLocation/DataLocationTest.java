@@ -42,13 +42,10 @@ public class DataLocationTest extends ContractPrepareTest {
     public void update() {
         try {
 
-            DataLocation dataLocation = DataLocation.deploy(web3j, transactionManager, provider).send();
+            DataLocation dataLocation = DataLocation.load("0x47684a3bfc2138c589d95e3c5496ca7898670592",web3j, transactionManager, provider);
 
             String contractAddress = dataLocation.getContractAddress();
-            TransactionReceipt tx = dataLocation.getTransactionReceipt().get();
 
-            collector.logStepPass("FunctionDeclaraction deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + dataLocation.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt = dataLocation.savePerson(new BigInteger(id),name,new BigInteger(age)).send();
 

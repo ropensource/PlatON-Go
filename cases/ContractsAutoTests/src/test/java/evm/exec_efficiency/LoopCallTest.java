@@ -32,10 +32,9 @@ public class LoopCallTest extends ContractPrepareTest {
     public void test() {
         prepare();
         try {
-            LoopCall loopCall = LoopCall.deploy(web3j, transactionManager, provider).send();
+            LoopCall loopCall = LoopCall.load("0xebc39bb5f4dcf82df1641aa02f805e853759a174",web3j, transactionManager, provider);
             contractAddress = loopCall.getContractAddress();
             collector.logStepPass("contract deploy successful. contractAddress:" + contractAddress);
-            collector.logStepPass("deploy gas used:" + loopCall.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt = LoopCall.load(contractAddress, web3j, transactionManager, provider)
                     .loopCallTest(numberOfCalls).send();

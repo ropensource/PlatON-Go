@@ -26,11 +26,8 @@ public class OneInheritTest extends WASMContractPrepareTest {
 
         try {
             prepare();
-            OneInherit oneInherit = OneInherit.deploy(web3j, transactionManager, provider).send();
+            OneInherit oneInherit = OneInherit.load("0xaab37257d0b8d976838bba99a4de85ac263dc6e3",web3j, transactionManager, provider);
             String contractAddress = oneInherit.getContractAddress();
-            String transactionHash = oneInherit.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("OneInherit issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + oneInherit.getTransactionReceipt().get().getGasUsed());
 
             OneInherit.My_message my_message = new OneInherit.My_message();
             OneInherit.Message message = new OneInherit.Message();

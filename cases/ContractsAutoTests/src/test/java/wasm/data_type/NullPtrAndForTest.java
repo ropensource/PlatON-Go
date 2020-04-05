@@ -25,12 +25,8 @@ public class NullPtrAndForTest extends WASMContractPrepareTest {
         NullPtrAndForContract nullPtrAndForContract = null;
         try {
             prepare();
-            nullPtrAndForContract = NullPtrAndForContract.deploy(web3j, transactionManager, provider).send();
+            nullPtrAndForContract = NullPtrAndForContract.load("0x11fa99dc021d720ec64363f1509630d6eea66629",web3j, transactionManager, provider);
             String contractAddress = nullPtrAndForContract.getContractAddress();
-            TransactionReceipt tx = nullPtrAndForContract.getTransactionReceipt().get();
-            collector.logStepPass("nullPtrAndForContract issued successfully.contractAddress:" + contractAddress
-                                  + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
 
         } catch (Exception e) {
             collector.logStepFail("nullPtrAndForContract deploy fail.", e.toString());

@@ -30,14 +30,10 @@ public class InterfaceContractBLimitStructTest extends ContractPrepareTest {
         InterfaceContractStructTest interfaceContractStructTest= null;
         try {
             //合约部署
-            interfaceContractStructTest = InterfaceContractStructTest.deploy(web3j, transactionManager, provider).send();
+            interfaceContractStructTest = InterfaceContractStructTest.load("0xddbb0faa8c4cad53bf3d7befc86d903c266aa5e0",web3j, transactionManager, provider);
             String contractAddress = interfaceContractStructTest.getContractAddress();
-            TransactionReceipt tx = interfaceContractStructTest.getTransactionReceipt().get();
 
-            collector.logStepPass("InterfaceContractStructTest issued successfully.contractAddress:" + contractAddress
-                                    + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
 
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
 
         } catch (Exception e) {
             collector.logStepFail("InterfaceContractStructTest deploy fail.", e.toString());

@@ -47,12 +47,9 @@ public class BlockTransactionPropertiesFunctionsTest extends ContractPrepareTest
             author = "liweic", showName = "function.BlockTransactionPropertiesFunctionsTest-区块和交易函数测试", sourcePrefix = "evm")
     public void BlockTransactionPropertiesfunction() {
         try {
-            BlockTransactionPropertiesFunctions blockTransactionPropertiesFunctions = BlockTransactionPropertiesFunctions.deploy(web3j, transactionManager, provider).send();
+            BlockTransactionPropertiesFunctions blockTransactionPropertiesFunctions = BlockTransactionPropertiesFunctions.load("0xd4fa1632066d041f0b2822e9f2cff98ed2f7612d",web3j, transactionManager, provider);
 
             String contractAddress = blockTransactionPropertiesFunctions.getContractAddress();
-            TransactionReceipt tx = blockTransactionPropertiesFunctions.getTransactionReceipt().get();
-            collector.logStepPass("BlockTransactionPropertiesFunctionsTest deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("BlockTransactionPropertiesFunctionsTest deploy gasUsed:" + blockTransactionPropertiesFunctions.getTransactionReceipt().get().getGasUsed());
 
             //验证block.number函数(获取块高)
             BigInteger PlatONBlocknumber = web3j.platonBlockNumber().send().getBlockNumber();

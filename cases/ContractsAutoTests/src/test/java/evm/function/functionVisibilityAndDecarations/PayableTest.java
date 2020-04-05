@@ -30,12 +30,9 @@ public class PayableTest extends ContractPrepareTest {
             author = "liweic", showName = "function.PayableTest-函数声明方式Payable测试", sourcePrefix = "evm")
     public void payable() {
         try {
-            Payable payable = Payable.deploy(web3j, transactionManager, provider).send();
+            Payable payable = Payable.load("0x7a3cb0ad07c9f380aa077b9d8cb9279578de8f5e",web3j, transactionManager, provider);
 
             String contractAddress = payable.getContractAddress();
-            TransactionReceipt tx = payable.getTransactionReceipt().get();
-            collector.logStepPass("paybale deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("paybale deploy gasUsed:" + payable.getTransactionReceipt().get().getGasUsed());
 
             //验证payable声明
             BigInteger payablepremoney = payable.getBalances("0x8a9B36694F1eeeb500c84A19bB34137B05162EC4").send();

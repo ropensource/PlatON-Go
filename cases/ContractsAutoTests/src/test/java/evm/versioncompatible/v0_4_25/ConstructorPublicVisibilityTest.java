@@ -118,12 +118,9 @@ public class ConstructorPublicVisibilityTest extends ContractPrepareTest {
         try {
             prepare();
             BigInteger constructorValue = new BigInteger("10000000000000");
-            ConstructorPublicVisibility visibility = ConstructorPublicVisibility.deploy(web3j, transactionManager, provider,constructorValue).send();
+            ConstructorPublicVisibility visibility = ConstructorPublicVisibility.load("0x0011b7e50dfb91e22bec3cd83805f1ef14224f5a",web3j, transactionManager, provider);
             String contractAddress = visibility.getContractAddress();
-            String transactionHash = visibility.getTransactionReceipt().get().getTransactionHash();
             BigInteger result = visibility.show().send();
-            collector.logStepPass("ConstructorPublicVisibility issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + visibility.getTransactionReceipt().get().getGasUsed());
             collector.assertEqual(result, new BigInteger("0"), "checkout msg.value is allowed to be used in non-payable functions and in the modifier for this function");
         } catch (Exception e) {
             collector.logStepFail("ConstructorPublicVisibilityTest testShow failure,exception msg:" , e.getMessage());

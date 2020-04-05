@@ -38,12 +38,8 @@ public class MappingArrayDataTypeContractTest extends ContractPrepareTest {
         MappingArrayDataTypeContract mappingArrayDataTypeContract = null;
         try {
             //合约部署
-            mappingArrayDataTypeContract = MappingArrayDataTypeContract.deploy(web3j, transactionManager, provider).send();
+            mappingArrayDataTypeContract = MappingArrayDataTypeContract.load("0x48e1cb458085bcd7df450b9516d493a819a97c67",web3j, transactionManager, provider);
             String contractAddress = mappingArrayDataTypeContract.getContractAddress();
-            TransactionReceipt tx =  mappingArrayDataTypeContract.getTransactionReceipt().get();
-            collector.logStepPass("mappingArrayDataTypeContract issued successfully.contractAddress:" + contractAddress
-                                    + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
         } catch (Exception e) {
             collector.logStepFail("mappingArrayDataTypeContract deploy fail.", e.toString());
             e.printStackTrace();

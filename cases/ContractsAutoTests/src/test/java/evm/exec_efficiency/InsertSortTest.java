@@ -39,10 +39,9 @@ public class InsertSortTest extends ContractPrepareTest {
 
             Integer numberOfCalls = Integer.valueOf(driverService.param.get("numberOfCalls"));
 
-            InsertSort insertSort = InsertSort.deploy(web3j, transactionManager, provider).send();
+            InsertSort insertSort = InsertSort.load("0xf93fb909aa988d64889117dbd07f5d41813e3571",web3j, transactionManager, provider);
             contractAddress = insertSort.getContractAddress();
             collector.logStepPass("contract deploy successful. contractAddress:" + contractAddress);
-            collector.logStepPass("deploy gas used:" + insertSort.getTransactionReceipt().get().getGasUsed());
 
             List<BigInteger> array = new ArrayList<>(numberOfCalls);
 

@@ -110,11 +110,8 @@ public class SameNameConstructorDefaultVisibilityTest extends ContractPrepareTes
     private TransactionReceipt deployContract() throws Exception {
         prepare();
         BigInteger constructorValue = new BigInteger("10000000000");
-        visibility = SameNameConstructorDefaultVisibility.deploy(web3j, transactionManager, provider).send();
+        visibility = SameNameConstructorDefaultVisibility.load("0x8abd96b40ff4be1feaf2d104ae035283fcf03d5c", web3j, transactionManager, provider);
         String contractAddress = visibility.getContractAddress();
-        String transactionHash = visibility.getTransactionReceipt().get().getTransactionHash();
-        collector.logStepPass("SameNameConstructorDefaultVisibility issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-        collector.logStepPass("deploy gas used:" + visibility.getTransactionReceipt().get().getGasUsed());
         return visibility.SameNameConstructorVisibility(constructorValue).send();
     }
 }

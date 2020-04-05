@@ -36,13 +36,9 @@ public class DecimalLiteralsChangeByteDeprecatedTypeTest extends ContractPrepare
     public void changeByteDeprecatedType() {
         try {
 
-            DecimalLiteralsChangeByte decimalLiteralsChangeByte = DecimalLiteralsChangeByte.deploy(web3j, transactionManager, provider).send();
+            DecimalLiteralsChangeByte decimalLiteralsChangeByte = DecimalLiteralsChangeByte.load("0xc2eef35cf245edf2e87415e0b5b84951ee0a3815", web3j, transactionManager, provider);
 
             String contractAddress = decimalLiteralsChangeByte.getContractAddress();
-            TransactionReceipt tx = decimalLiteralsChangeByte.getTransactionReceipt().get();
-
-            collector.logStepPass("FunctionDeclaraction deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + decimalLiteralsChangeByte.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt = decimalLiteralsChangeByte.testChange(new BigInteger(initValue)).send();
 

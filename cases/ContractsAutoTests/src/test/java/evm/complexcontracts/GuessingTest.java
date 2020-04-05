@@ -36,12 +36,9 @@ public class GuessingTest extends ContractPrepareTest {
 
         try {
 
-            Guessing guessing = Guessing.deploy(web3j, transactionManager, provider,new BigInteger(endBlock)).send();
+            Guessing guessing = Guessing.load("0xd456b20eb82c875a8509e21f662fae9129ddf2da",web3j, transactionManager, provider);
 
             String contractAddress = guessing.getContractAddress();
-            TransactionReceipt tx = guessing.getTransactionReceipt().get();
-            collector.logStepPass("GuessingTest deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("GuessingTest deploy gasUsed:" + guessing.getTransactionReceipt().get().getGasUsed());
 
             //查询截止块高
             endBlock = guessing.endBlock().send().toString();
@@ -68,7 +65,7 @@ public class GuessingTest extends ContractPrepareTest {
             collector.logStepPass("发起第一次竞猜前奖池总金额为："+balance);
 
             //发起竞猜(客户端发起的单位是von与 lat差10^18次方)
-            tx = guessing.guessingWithLat(new BigInteger("1000000000000000000000")).send();
+            TransactionReceipt tx = guessing.guessingWithLat(new BigInteger("1000000000000000000000")).send();
             collector.logStepPass(tx.getLogs().toString());
             collector.logStepPass(" gas used>>>>>>>" + transactionReceipt.getGasUsed());
 

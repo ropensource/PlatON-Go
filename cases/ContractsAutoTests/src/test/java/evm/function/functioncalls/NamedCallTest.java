@@ -32,12 +32,9 @@ public class NamedCallTest extends ContractPrepareTest {
             author = "liweic", showName = "function.NamedCallTest-函数具名调用测试", sourcePrefix = "evm")
     public void namedcall() {
         try {
-            NamedCall namedcall = NamedCall.deploy(web3j, transactionManager, provider).send();
+            NamedCall namedcall = NamedCall.load("0xfbda968ef9610eb541309b92fcc3aaad1890e7b9",web3j, transactionManager, provider);
 
             String contractAddress = namedcall.getContractAddress();
-            TransactionReceipt tx = namedcall.getTransactionReceipt().get();
-            collector.logStepPass("namedcall deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("namedcall deploy gasUsed:" + namedcall.getTransactionReceipt().get().getGasUsed());
 
             //交换传入值的顺序并返回
             Tuple2 result = namedcall.exchange(new BigInteger("1"),new BigInteger("2")).send();

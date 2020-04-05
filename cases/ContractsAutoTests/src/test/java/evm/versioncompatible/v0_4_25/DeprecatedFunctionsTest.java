@@ -46,11 +46,8 @@ public class DeprecatedFunctionsTest extends ContractPrepareTest {
     public void testThrowCheck() {
         try {
             prepare();
-            DeprecatedFunctions deprecatedFunctions = DeprecatedFunctions.deploy(web3j, transactionManager, provider).send();
+            DeprecatedFunctions deprecatedFunctions = DeprecatedFunctions.load("0x7be4bcd080d9486c48697625b2b25ed10ae78d5a",web3j, transactionManager, provider);
             String contractAddress = deprecatedFunctions.getContractAddress();
-            String transactionHash = deprecatedFunctions.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("DeprecatedFunctions issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + deprecatedFunctions.getTransactionReceipt().get().getGasUsed());
             try {
                 deprecatedFunctions.throwCheck(false).send();
             } catch (ContractCallException e) {

@@ -30,11 +30,8 @@ public class RequireHandleTest extends ContractPrepareTest {
     public void testFunctionCallException() {
         try {
             prepare();
-            RequireHandle handle = RequireHandle.deploy(web3j, transactionManager, provider).send();
+            RequireHandle handle = RequireHandle.load("0xf6ca8a27cec6c3115191be31c5452b58afcd3312",web3j, transactionManager, provider);
             String contractAddress = handle.getContractAddress();
-            String transactionHash = handle.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("RequireHandle issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + handle.getTransactionReceipt().get().getGasUsed());
             try {
                 handle.functionCallException(new BigInteger("1000")).send();
             } catch (TransactionException e) {
@@ -52,11 +49,8 @@ public class RequireHandleTest extends ContractPrepareTest {
     public void testNewContractException() {
         try {
             prepare();
-            RequireHandle handle = RequireHandle.deploy(web3j, transactionManager, provider).send();
+            RequireHandle handle = RequireHandle.load("0x0294ff54df870f527fe5a8de7e584c072afb20ed",web3j, transactionManager, provider);
             String contractAddress = handle.getContractAddress();
-            String transactionHash = handle.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("RequireHandle issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
-            collector.logStepPass("deploy gas used:" + handle.getTransactionReceipt().get().getGasUsed());
             try {
                 handle.newContractException().send();
             } catch (TransactionException e) {
@@ -74,10 +68,8 @@ public class RequireHandleTest extends ContractPrepareTest {
     public void testOutFunctionCallException() {
         try {
             prepare();
-            RequireHandle handle = RequireHandle.deploy(web3j, transactionManager, provider).send();
+            RequireHandle handle = RequireHandle.load("0x2018c99369dc87c32ddbe49ce2ee586bf887c085",web3j, transactionManager, provider);
             String contractAddress = handle.getContractAddress();
-            String transactionHash = handle.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("RequireHandle issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
             try {
                 handle.outFunctionCallException(new BigInteger("1000")).send();
             } catch (TransactionException e) {
@@ -95,10 +87,8 @@ public class RequireHandleTest extends ContractPrepareTest {
     public void testNonPayableReceiveEthException() {
         try {
             prepare();
-            RequireHandle handle = RequireHandle.deploy(web3j, transactionManager, provider).send();
+            RequireHandle handle = RequireHandle.load("0x0f48ea14b810ba497064548d567e4c60d0d79b2a",web3j, transactionManager, provider);
             String contractAddress = handle.getContractAddress();
-            String transactionHash = handle.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("RequireHandle issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
             try {
                 handle.nonPayableReceiveEthException(new BigInteger("1000")).send();
             } catch (TransactionException e) {
@@ -137,10 +127,8 @@ public class RequireHandleTest extends ContractPrepareTest {
     public void testTransferCallException() {
         try {
             prepare();
-            RequireHandle handle = RequireHandle.deploy(web3j, transactionManager, provider).send();
+            RequireHandle handle = RequireHandle.load("0xef5e51f3a0a059b2ff7b50417506d9949738a2b1",web3j, transactionManager, provider);
             String contractAddress = handle.getContractAddress();
-            String transactionHash = handle.getTransactionReceipt().get().getTransactionHash();
-            collector.logStepPass("RequireHandle issued successfully.contractAddress:" + contractAddress + ", hash:" + transactionHash);
             try {
                 handle.transferCallException(new BigInteger("100000000000000000000000000000000000000000"),new BigInteger("100000000000")).send();
             } catch (TransactionException e) {

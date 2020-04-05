@@ -38,15 +38,12 @@ public class AssertContractTest extends ContractPrepareTest {
     public void assertTest() {
         try {
 
-            AssertContract assertContract = AssertContract.deploy(web3j, transactionManager, provider).send();
+            AssertContract assertContract = AssertContract.load("0xa31a2c52996ef77bc5064d389323b125290d05f1",web3j, transactionManager, provider);
 
             String contractAddress = assertContract.getContractAddress();
-            TransactionReceipt tx = assertContract.getTransactionReceipt().get();
 
-            collector.logStepPass("AssertContract deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + assertContract.getTransactionReceipt().get().getGasUsed());
 
-            tx = assertContract.toSenderAmount(new BigInteger(first),new BigInteger(second)).send();
+            TransactionReceipt tx = assertContract.toSenderAmount(new BigInteger(first),new BigInteger(second)).send();
 
             if(Integer.valueOf(first).intValue()>Integer.valueOf(second)){
                 String chainResult = assertContract.getResult().send().toString();

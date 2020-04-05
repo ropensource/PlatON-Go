@@ -32,17 +32,14 @@ public class FallbackDeclaractionTest extends ContractPrepareTest {
     public void update() {
         try {
 
-            FallbackDeclaraction fallbackDeclaraction = FallbackDeclaraction.deploy(web3j, transactionManager, provider).send();
+            FallbackDeclaraction fallbackDeclaraction = FallbackDeclaraction.load("0x3d9a5259c405b19edaaa2ed52cd1726a8f927333",web3j, transactionManager, provider);
 
             String contractAddress = fallbackDeclaraction.getContractAddress();
-            TransactionReceipt tx = fallbackDeclaraction.getTransactionReceipt().get();
 
             initValue = fallbackDeclaraction.getA().send().toString();
 
             collector.logStepPass("链上函数的初始值为："+initValue);
 
-            collector.logStepPass("FallbackDeclaraction deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + fallbackDeclaraction.getTransactionReceipt().get().getGasUsed());
 
             //调用不存在函数，将触发回退函数，导致A修改成111
             TransactionReceipt transactionReceipt = fallbackDeclaraction.callNonExistFunc().send();

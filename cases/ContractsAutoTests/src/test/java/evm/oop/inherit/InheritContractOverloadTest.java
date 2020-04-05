@@ -30,12 +30,8 @@ public class InheritContractOverloadTest extends ContractPrepareTest {
         InheritContractOverload inheritContractOverload = null;
         try {
             //合约部署
-            inheritContractOverload = InheritContractOverload.deploy(web3j, transactionManager, provider).send();
+            inheritContractOverload = InheritContractOverload.load("0xdebba485459dbfe9acb85c1b24352025f005a972",web3j, transactionManager, provider);
             String contractAddress = inheritContractOverload.getContractAddress();
-            TransactionReceipt tx =  inheritContractOverload.getTransactionReceipt().get();
-            collector.logStepPass("InheritContractOverload issued successfully.contractAddress:" + contractAddress
-                                    + ", hash:" + tx.getTransactionHash() + ",deploy gas used:" + tx.getGasUsed());
-            collector.logStepPass("deployFinishCurrentBlockNumber:" + tx.getBlockNumber());
         } catch (Exception e) {
             collector.logStepFail("InheritContractOverload deploy fail.", e.toString());
             e.printStackTrace();

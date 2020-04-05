@@ -30,13 +30,10 @@ public class SuicideAndSelfdestructTest extends ContractPrepareTest {
     public void selfKill() {
         try {
 
-            SuicideAndSelfdestruct suicideAndSelfdestruct = SuicideAndSelfdestruct.deploy(web3j, transactionManager, provider).send();
+            SuicideAndSelfdestruct suicideAndSelfdestruct = SuicideAndSelfdestruct.load("0xc8d3f5297060e640b6de09f801873ed7f2560035",web3j, transactionManager, provider);
 
             String contractAddress = suicideAndSelfdestruct.getContractAddress();
-            TransactionReceipt tx = suicideAndSelfdestruct.getTransactionReceipt().get();
 
-            collector.logStepPass("SuicideAndSelfdestructTest deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("deploy gas used:" + suicideAndSelfdestruct.getTransactionReceipt().get().getGasUsed());
 
             TransactionReceipt transactionReceipt = suicideAndSelfdestruct.increment().send();
 

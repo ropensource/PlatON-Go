@@ -33,12 +33,9 @@ public class InheritanceModifierTest extends ContractPrepareTest {
             author = "liweic", showName = "function.InheritanceModifierTest-单修饰器函数测试", sourcePrefix = "evm")
     public void inheritancemodifier() {
         try {
-            InheritanceModifier inheritanceModifier = InheritanceModifier.deploy(web3j, transactionManager, provider).send();
+            InheritanceModifier inheritanceModifier = InheritanceModifier.load("0x31e9928f7edac44f9a5b6c3fefa2c279a9b53269",web3j, transactionManager, provider);
 
             String contractAddress = inheritanceModifier.getContractAddress();
-            TransactionReceipt tx = inheritanceModifier.getTransactionReceipt().get();
-            collector.logStepPass("InheritanceModifier deploy successfully.contractAddress:" + contractAddress + ", hash:" + tx.getTransactionHash());
-            collector.logStepPass("InheritanceModifier deploy gasUsed:" + inheritanceModifier.getTransactionReceipt().get().getGasUsed());
 
             //验证单修饰器函数调用
             BigInteger result = inheritanceModifier.getA().send();
