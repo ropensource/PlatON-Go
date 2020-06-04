@@ -20,6 +20,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
+	"github.com/PlatONnetwork/PlatON-Go/common"
 
 	"gopkg.in/urfave/cli.v1"
 
@@ -58,7 +59,7 @@ Generate a new private key pair.
 		out := outputGenkeypair{
 			PublicKey:  hex.EncodeToString(crypto.FromECDSAPub(&privateKey.PublicKey)[1:]),
 			PrivateKey: hex.EncodeToString(crypto.FromECDSA(privateKey)),
-			Address: crypto.PubkeyToAddress(privateKey.PublicKey).Bech32(),
+			Address: crypto.PubkeyToAddress(privateKey.PublicKey).Bech32WithPrefix(common.MainNetAddressPrefix),
 		}
 		if ctx.Bool(jsonFlag.Name) {
 			mustPrintJSON(out)
