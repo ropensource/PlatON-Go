@@ -30,6 +30,7 @@ import (
 type outputGenkeypair struct {
 	PrivateKey string
 	PublicKey  string
+	Address string
 }
 
 var commandGenkeypair = cli.Command{
@@ -57,12 +58,14 @@ Generate a new private key pair.
 		out := outputGenkeypair{
 			PublicKey:  hex.EncodeToString(crypto.FromECDSAPub(&privateKey.PublicKey)[1:]),
 			PrivateKey: hex.EncodeToString(crypto.FromECDSA(privateKey)),
+			Address: crypto.PubkeyToAddress(privateKey.PublicKey).Bech32(),
 		}
 		if ctx.Bool(jsonFlag.Name) {
 			mustPrintJSON(out)
 		} else {
 			fmt.Println("PrivateKey: ", out.PrivateKey)
 			fmt.Println("PublicKey : ", out.PublicKey)
+			fmt.Println("Address: ", out.Address)
 		}
 		return nil
 	},
